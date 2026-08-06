@@ -1,0 +1,26 @@
+# Backend (NestJS)
+backend/node_modules/
+backend/dist/
+backend/.env
+
+# Frontend (Next.js)
+frontend/node_modules/
+frontend/.next/
+
+# Mobile (Flutter)
+mobile/build/
+mobile/.dart_tool/
+mobile/**/android/.gradle/
+mobile/**/android/build/
+mobile/**/android/app/build/
+mobile/**/android/.gradle
+mobile/**/android/local.properties
+mobile/**/ios/Flutter/Flutter.podspec
+mobile/**/ios/Pods/
+mobile/**/ios/.symlinks/
+mobile/**/*.iml
+mobile/**/*.g.dart
+
+# OS / editor
+.DS_Store
+*.log
