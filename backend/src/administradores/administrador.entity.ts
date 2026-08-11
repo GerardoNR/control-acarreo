@@ -17,7 +17,7 @@ export class Administrador {
   @Column({ type: 'varchar', unique: true })
   usuario: string;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', select: false })
   password_hash: string;
 
   @Column({ type: 'boolean', default: true })
