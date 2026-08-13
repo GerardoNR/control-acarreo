@@ -23,9 +23,8 @@ import { AuditoriaModule } from './auditoria/auditoria.module';
       autoLoadEntities: true,
       // Necesario para la conexión actual con PostgreSQL/Supabase.
       ssl: { rejectUnauthorized: false },
-      // SOLO DESARROLLO.
-      // Antes de producción usar migrations y synchronize: false.
-      synchronize: true,
+      // El esquema se administra exclusivamente mediante migraciones revisadas.
+      synchronize: false,
     }),
     AuthModule,
     AdministradoresModule,
