@@ -15,6 +15,7 @@ import {
   MoreThanOrEqual,
   QueryFailedError,
 } from 'typeorm';
+import { Administrador } from '../administradores/administrador.entity';
 import { Camion } from '../camiones/camion.entity';
 import { Checador } from '../checadores/checador.entity';
 import { Chofer } from '../choferes/chofer.entity';
@@ -23,6 +24,8 @@ import { Proyecto } from '../proyectos/proyecto.entity';
 import { Role } from '../auth/enums/role.enum';
 import { AuthUser } from '../auth/interfaces/auth-user.interface';
 import { TipoUbicacion, Ubicacion } from '../ubicaciones/ubicacion.entity';
+import { CancelarViajeDto } from './dto/cancelar-viaje.dto';
+import { RegistrarLlegadaViajeDto } from './dto/registrar-llegada-viaje.dto';
 import { RegistrarSalidaViajeDto } from './dto/registrar-salida-viaje.dto';
 import { ConsultarViajesDto } from './dto/consultar-viajes.dto';
 import { EstadoViaje } from './enums/estado-viaje.enum';
@@ -161,6 +164,86 @@ export class ViajesService {
     }
   }
 
+  async registrarLlegada(
+    id: string,
+    dto: RegistrarLlegadaViajeDto,
+    usuario: AuthUser,
+  ): Promise<ViajeResponse> {
+    if (usuario.rol !== Role.CHECADOR) {
+      throw new ForbiddenException(
+        'Solo un checador puede registrar una llegada',
+      );
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const viaje = await manager.findOne(Viaje, {
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!viaje) {
+        throw new NotFoundException(`Viaje con id ${id} no encontrado`);
+      }
+      if (viaje.estado !== EstadoViaje.EN_TRANSITO) {
+        throw new ConflictException('El viaje ya no está en tránsito');
+      }
+
+      const checador = await this.obtenerChecadorAutenticado(manager, usuario);
+      viaje.cantidad_llegada = dto.cantidad_llegada?.toString() ?? null;
+      viaje.fecha_hora_llegada = new Date();
+      viaje.checador_llegada = checador;
+      viaje.observaciones_llegada = dto.observaciones_llegada ?? null;
+      viaje.estado = EstadoViaje.COMPLETADO;
+
+      await manager.save(Viaje, viaje);
+      const viajeActualizado = await manager.findOneOrFail(Viaje, {
+        where: { id },
+        relations: this.relacionesConsulta(),
+      });
+      return this.aRespuesta(viajeActualizado);
+    });
+  }
+
+  async cancelar(
+    id: string,
+    dto: CancelarViajeDto,
+    usuario: AuthUser,
+  ): Promise<ViajeResponse> {
+    if (usuario.rol !== Role.ADMINISTRADOR) {
+      throw new ForbiddenException(
+        'Solo un administrador puede cancelar un viaje',
+      );
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const viaje = await manager.findOne(Viaje, {
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!viaje) {
+        throw new NotFoundException(`Viaje con id ${id} no encontrado`);
+      }
+      if (viaje.estado !== EstadoViaje.EN_TRANSITO) {
+        throw new ConflictException('El viaje ya no está en tránsito');
+      }
+
+      const administrador = await this.obtenerAdministradorAutenticado(
+        manager,
+        usuario,
+      );
+      viaje.estado = EstadoViaje.CANCELADO;
+      viaje.fecha_hora_cancelacion = new Date();
+      viaje.administrador_cancelacion = administrador;
+      viaje.motivo_cancelacion = dto.motivo_cancelacion;
+
+      await manager.save(Viaje, viaje);
+      const viajeActualizado = await manager.findOneOrFail(Viaje, {
+        where: { id },
+        relations: this.relacionesConsulta(),
+      });
+      return this.aRespuesta(viajeActualizado);
+    });
+  }
+
   private async registrarSalidaEnTransaccion(
     manager: EntityManager,
     dto: RegistrarSalidaViajeDto,
@@ -227,10 +310,7 @@ export class ViajesService {
       'La ubicación de destino está inactiva',
     );
 
-    const checador = await manager.findOneBy(Checador, { id: usuario.id });
-    if (!checador || !checador.activo || checador.usuario !== usuario.usuario) {
-      throw new UnauthorizedException('Usuario autenticado no válido');
-    }
+    const checador = await this.obtenerChecadorAutenticado(manager, usuario);
 
     if (
       ubicacionOrigen.proyecto.id !== proyecto.id ||
@@ -309,6 +389,34 @@ export class ViajesService {
     if (!entidad.activo) {
       throw new BadRequestException(mensaje);
     }
+  }
+
+  private async obtenerChecadorAutenticado(
+    manager: EntityManager,
+    usuario: AuthUser,
+  ): Promise<Checador> {
+    const checador = await manager.findOneBy(Checador, { id: usuario.id });
+    if (!checador || !checador.activo || checador.usuario !== usuario.usuario) {
+      throw new UnauthorizedException('Usuario autenticado no válido');
+    }
+    return checador;
+  }
+
+  private async obtenerAdministradorAutenticado(
+    manager: EntityManager,
+    usuario: AuthUser,
+  ): Promise<Administrador> {
+    const administrador = await manager.findOneBy(Administrador, {
+      id: usuario.id,
+    });
+    if (
+      !administrador ||
+      !administrador.activo ||
+      administrador.usuario !== usuario.usuario
+    ) {
+      throw new UnauthorizedException('Usuario autenticado no válido');
+    }
+    return administrador;
   }
 
   private async obtenerConsecutivoFolio(

@@ -124,6 +124,24 @@ describe('DTO de viajes', () => {
         }),
       ).rejects.toThrow();
     });
+
+    it.each([
+      'estado',
+      'fecha_hora_llegada',
+      'checador_llegada',
+      'administrador_cancelacion',
+      'fecha_hora_cancelacion',
+      'motivo_cancelacion',
+      'creado_en',
+      'actualizado_en',
+    ])('rechaza el campo controlado por el servidor %s', async (campo) => {
+      await expect(
+        validate(RegistrarLlegadaViajeDto, {
+          cantidad_llegada: 14.5,
+          [campo]: 'valor-no-permitido',
+        }),
+      ).rejects.toThrow();
+    });
   });
 
   describe('CancelarViajeDto', () => {
@@ -140,6 +158,10 @@ describe('DTO de viajes', () => {
       ).rejects.toThrow();
     });
 
+    it('rechaza un motivo ausente', async () => {
+      await expect(validate(CancelarViajeDto, {})).rejects.toThrow();
+    });
+
     it('14. rechaza un motivo con menos de cinco caracteres', async () => {
       await expect(
         validate(CancelarViajeDto, { motivo_cancelacion: 'Falla' }),
@@ -149,14 +171,17 @@ describe('DTO de viajes', () => {
       ).rejects.toThrow();
     });
 
-    it('15. rechaza un administrador enviado manualmente', async () => {
-      await expect(
-        validate(CancelarViajeDto, {
-          motivo_cancelacion: 'Falla mecánica',
-          administrador_cancelacion_id: 1,
-        }),
-      ).rejects.toThrow();
-    });
+    it.each(['estado', 'administrador_cancelacion', 'fecha_hora_cancelacion'])(
+      'rechaza el campo controlado por el servidor %s',
+      async (campo) => {
+        await expect(
+          validate(CancelarViajeDto, {
+            motivo_cancelacion: 'Falla mecánica',
+            [campo]: campo === 'estado' ? 'cancelado' : 1,
+          }),
+        ).rejects.toThrow();
+      },
+    );
   });
 
   describe('ConsultarViajesDto', () => {

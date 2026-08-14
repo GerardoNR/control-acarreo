@@ -94,7 +94,7 @@ describe('ViajesController - registrar salida', () => {
 
   it('14. ParseUUIDPipe rechaza un UUID inválido', async () => {
     await expect(
-      new ParseUUIDPipe().transform('no-es-uuid', {
+      new ParseUUIDPipe().transform('1', {
         type: 'param',
         data: 'id',
       }),
@@ -131,5 +131,71 @@ describe('ViajesController - registrar salida', () => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       guard.handleRequest(null, null, new UnauthorizedException()),
     ).toThrow(UnauthorizedException);
+  });
+
+  it('delega el registro de llegada con UUID, DTO y usuario autenticado', async () => {
+    const registrarLlegada = jest.fn().mockResolvedValue({ id: 'viaje-id' });
+    const controller = new ViajesController({
+      registrarLlegada,
+    } as unknown as ViajesService);
+
+    await expect(
+      controller.registrarLlegada(
+        '9f7538fb-d306-42f7-a010-8865668c57b8',
+        { cantidad_llegada: 14.5 },
+        usuario,
+      ),
+    ).resolves.toEqual({ id: 'viaje-id' });
+    expect(registrarLlegada).toHaveBeenCalledWith(
+      '9f7538fb-d306-42f7-a010-8865668c57b8',
+      { cantidad_llegada: 14.5 },
+      usuario,
+    );
+  });
+
+  it('protege llegada con JWT, RolesGuard y rol CHECADOR', () => {
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const handler = ViajesController.prototype.registrarLlegada;
+    expect(Reflect.getMetadata(PATH_METADATA, handler)).toBe(':id/llegada');
+    expect(Reflect.getMetadata(GUARDS_METADATA, handler)).toEqual([
+      JwtAuthGuard,
+      RolesGuard,
+    ]);
+    expect(Reflect.getMetadata(ROLES_KEY, handler)).toEqual([Role.CHECADOR]);
+  });
+
+  it('delega la cancelación con UUID, DTO y administrador autenticado', async () => {
+    const cancelar = jest.fn().mockResolvedValue({ id: 'viaje-id' });
+    const controller = new ViajesController({
+      cancelar,
+    } as unknown as ViajesService);
+    const administrador = { ...usuario, rol: Role.ADMINISTRADOR };
+    const dto = { motivo_cancelacion: 'Cambio de frente' };
+
+    await expect(
+      controller.cancelar(
+        '9f7538fb-d306-42f7-a010-8865668c57b8',
+        dto,
+        administrador,
+      ),
+    ).resolves.toEqual({ id: 'viaje-id' });
+    expect(cancelar).toHaveBeenCalledWith(
+      '9f7538fb-d306-42f7-a010-8865668c57b8',
+      dto,
+      administrador,
+    );
+  });
+
+  it('protege cancelación con JWT, RolesGuard y rol ADMINISTRADOR', () => {
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const handler = ViajesController.prototype.cancelar;
+    expect(Reflect.getMetadata(PATH_METADATA, handler)).toBe(':id/cancelar');
+    expect(Reflect.getMetadata(GUARDS_METADATA, handler)).toEqual([
+      JwtAuthGuard,
+      RolesGuard,
+    ]);
+    expect(Reflect.getMetadata(ROLES_KEY, handler)).toEqual([
+      Role.ADMINISTRADOR,
+    ]);
   });
 });
