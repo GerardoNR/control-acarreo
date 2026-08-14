@@ -1,11 +1,14 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsEnum,
   IsInt,
+  IsNotEmpty,
+  IsString,
   Matches,
   IsOptional,
   IsPositive,
   Max,
+  MaxLength,
   Min,
 } from 'class-validator';
 import { EstadoViaje } from '../enums/estado-viaje.enum';
@@ -14,6 +17,15 @@ export class ConsultarViajesDto {
   @IsOptional()
   @IsEnum(EstadoViaje)
   estado?: EstadoViaje;
+
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(19)
+  folio?: string;
 
   @IsOptional()
   @Type(() => Number)

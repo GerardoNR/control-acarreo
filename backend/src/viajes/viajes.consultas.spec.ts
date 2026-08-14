@@ -157,6 +157,18 @@ describe('ViajesService - consultas', () => {
     );
   });
 
+  it('aplica búsqueda parcial de folio sin distinguir mayúsculas', async () => {
+    await service.consultar({
+      page: 1,
+      limit: 20,
+      folio: '20260812-000001',
+    });
+    const opciones = obtenerOpcionesConsulta();
+    const where = opciones.where as { folio: FindOperator<string> };
+    expect(where.folio.type).toBe('ilike');
+    expect(where.folio.value).toBe('%20260812-000001%');
+  });
+
   it('4. interpreta fecha_desde simple al inicio en Monterrey', async () => {
     await service.consultar({
       page: 1,

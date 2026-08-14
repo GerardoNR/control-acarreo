@@ -11,6 +11,7 @@ import {
   DataSource,
   EntityManager,
   FindOptionsWhere,
+  ILike,
   LessThan,
   MoreThanOrEqual,
   QueryFailedError,
@@ -53,6 +54,7 @@ export class ViajesService {
   ): Promise<ViajesPaginadosResponse> {
     const where: FindOptionsWhere<Viaje> = {};
     if (filtros.estado) where.estado = filtros.estado;
+    if (filtros.folio) where.folio = ILike(`%${filtros.folio}%`);
     if (filtros.proyecto_id) where.proyecto = { id: filtros.proyecto_id };
     if (filtros.material_id) where.material = { id: filtros.material_id };
     if (filtros.camion_id) where.camion = { id: filtros.camion_id };

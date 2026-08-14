@@ -13,6 +13,7 @@ import { MaterialesModule } from './materiales/materiales.module';
 import { UbicacionesModule } from './ubicaciones/ubicaciones.module';
 import { ViajesModule } from './viajes/viajes.module';
 import { AuditoriaModule } from './auditoria/auditoria.module';
+import { ReportesModule } from './reportes/reportes.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { AuditoriaModule } from './auditoria/auditoria.module';
     UbicacionesModule,
     ViajesModule,
     AuditoriaModule,
+    ReportesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

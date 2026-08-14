@@ -235,5 +235,23 @@ describe('DTO de viajes', () => {
       expect(defaults.page).toBe(1);
       expect(defaults.limit).toBe(20);
     });
+
+    it('acepta y normaliza una búsqueda parcial por folio', async () => {
+      const dto = await validate(
+        ConsultarViajesDto,
+        { folio: '  VIA-20260812  ' },
+        'query',
+      );
+      expect(dto.folio).toBe('VIA-20260812');
+    });
+
+    it('rechaza un folio vacío o mayor a la longitud persistida', async () => {
+      await expect(
+        validate(ConsultarViajesDto, { folio: '   ' }, 'query'),
+      ).rejects.toThrow();
+      await expect(
+        validate(ConsultarViajesDto, { folio: 'X'.repeat(20) }, 'query'),
+      ).rejects.toThrow();
+    });
   });
 });
