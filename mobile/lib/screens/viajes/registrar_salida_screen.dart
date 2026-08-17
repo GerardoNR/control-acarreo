@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-class HistorialScreen extends StatelessWidget {
-  const HistorialScreen({super.key});
+class RegistrarSalidaScreen extends StatelessWidget {
+  const RegistrarSalidaScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Historial de viajes')),
+      appBar: AppBar(title: const Text('Registrar salida')),
       body: const SafeArea(
         child: Center(
           child: Padding(
@@ -14,11 +14,11 @@ class HistorialScreen extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.history, size: 56),
+                Icon(Icons.local_shipping_outlined, size: 56),
                 SizedBox(height: 16),
-                Text('Historial'),
+                Text('Registrar salida'),
                 SizedBox(height: 8),
-                Text('Funcionalidad disponible en FASE 10'),
+                Text('Funcionalidad disponible en FASE 7'),
               ],
             ),
           ),
