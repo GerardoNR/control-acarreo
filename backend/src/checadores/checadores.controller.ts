@@ -6,13 +6,20 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../auth/enums/role.enum';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { CambiarEstadoDto } from '../common/dto/cambiar-estado.dto';
 import { ChecadoresService } from './checadores.service';
 import { CreateChecadorDto } from './dto/create-checador.dto';
 import { UpdateChecadorDto } from './dto/update-checador.dto';
 
 @Controller('checadores')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMINISTRADOR)
 export class ChecadoresController {
   constructor(private readonly checadoresService: ChecadoresService) {}
 
