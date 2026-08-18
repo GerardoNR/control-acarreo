@@ -317,6 +317,33 @@ void main() {
     expect(viaje.cantidadLlegada, '14.500');
     expect(viaje.checadorLlegada?.nombre, 'Checador Dos');
   });
+
+  test('consulta historial paginado con los filtros exactos', () async {
+    final apiService = _FakeConsultaApiService([viajeListadoJson()]);
+    final service = ViajesService(apiService: apiService);
+
+    final pagina = await service.obtenerHistorial(
+      pagina: 2,
+      limite: 20,
+      folio: 'VIA-2026',
+      estado: 'completado',
+      camionId: 3,
+      proyectoId: 1,
+    );
+
+    expect(apiService.path, '/viajes');
+    expect(apiService.autenticado, isTrue);
+    expect(apiService.queryParameters, {
+      'page': 2,
+      'limit': 20,
+      'folio': 'VIA-2026',
+      'estado': 'completado',
+      'camion_id': 3,
+      'proyecto_id': 1,
+    });
+    expect(pagina.viajes.single.folio, 'VIA-20260817-000042');
+    expect(pagina.total, 1);
+  });
 }
 
 class _FakeApiService extends ApiService {

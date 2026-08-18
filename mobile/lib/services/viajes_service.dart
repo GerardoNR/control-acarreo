@@ -1,3 +1,4 @@
+import '../models/pagina_viajes.dart';
 import '../models/registrar_llegada_request.dart';
 import '../models/registrar_salida_request.dart';
 import '../models/viaje.dart';
@@ -61,5 +62,32 @@ class ViajesService {
       throw const FormatException('La respuesta no contiene un viaje.');
     }
     return Viaje.fromJson(data);
+  }
+
+  Future<PaginaViajes> obtenerHistorial({
+    int pagina = 1,
+    int limite = 20,
+    String? folio,
+    String? estado,
+    int? camionId,
+    int? proyectoId,
+  }) async {
+    final response = await _apiService.get<Map<String, dynamic>>(
+      '/viajes',
+      queryParameters: {
+        'page': pagina,
+        'limit': limite,
+        if (folio != null && folio.isNotEmpty) 'folio': folio,
+        'estado': ?estado,
+        'camion_id': ?camionId,
+        'proyecto_id': ?proyectoId,
+      },
+      autenticado: true,
+    );
+    final data = response.data;
+    if (data == null) {
+      throw const FormatException('La respuesta no contiene una página.');
+    }
+    return PaginaViajes.fromJson(data);
   }
 }
