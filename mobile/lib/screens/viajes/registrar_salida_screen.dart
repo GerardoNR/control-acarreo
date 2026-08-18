@@ -75,20 +75,18 @@ class _RegistrarSalidaScreenState extends State<RegistrarSalidaScreen> {
   }
 
   List<Ubicacion> get _origenesDisponibles {
-    final proyectoId = _proyecto?.id;
-    if (proyectoId == null) return [];
-    return _ubicaciones
-        .where((item) => item.proyecto.id == proyectoId && item.tipo == 'banco')
-        .toList(growable: false);
+    return _ubicacionesPara(_proyecto, 'banco');
   }
 
   List<Ubicacion> get _destinosDisponibles {
-    final proyectoId = _proyecto?.id;
+    return _ubicacionesPara(_proyecto, 'frente');
+  }
+
+  List<Ubicacion> _ubicacionesPara(Proyecto? proyecto, String tipo) {
+    final proyectoId = proyecto?.id;
     if (proyectoId == null) return [];
     return _ubicaciones
-        .where(
-          (item) => item.proyecto.id == proyectoId && item.tipo == 'frente',
-        )
+        .where((item) => item.proyecto.id == proyectoId && item.tipo == tipo)
         .toList(growable: false);
   }
 
@@ -109,22 +107,40 @@ class _RegistrarSalidaScreenState extends State<RegistrarSalidaScreen> {
         _catalogosService.obtenerUbicaciones(),
       ]);
       if (!mounted) return;
+      final proyectos = (resultados[0] as List<Proyecto>)
+          .where((item) => item.activo)
+          .toList(growable: false);
+      final materiales = (resultados[1] as List<catalogo.Material>)
+          .where((item) => item.activo)
+          .toList(growable: false);
+      final camiones = (resultados[2] as List<Camion>)
+          .where((item) => item.activo)
+          .toList(growable: false);
+      final choferes = (resultados[3] as List<Chofer>)
+          .where((item) => item.activo)
+          .toList(growable: false);
+      final ubicaciones = (resultados[4] as List<Ubicacion>)
+          .where((item) => item.activo)
+          .toList(growable: false);
+      final proyectoInicial = proyectos.isEmpty ? null : proyectos.first;
+
       setState(() {
-        _proyectos = (resultados[0] as List<Proyecto>)
-            .where((item) => item.activo)
-            .toList(growable: false);
-        _materiales = (resultados[1] as List<catalogo.Material>)
-            .where((item) => item.activo)
-            .toList(growable: false);
-        _camiones = (resultados[2] as List<Camion>)
-            .where((item) => item.activo)
-            .toList(growable: false);
-        _choferes = (resultados[3] as List<Chofer>)
-            .where((item) => item.activo)
-            .toList(growable: false);
-        _ubicaciones = (resultados[4] as List<Ubicacion>)
-            .where((item) => item.activo)
-            .toList(growable: false);
+        _proyectos = proyectos;
+        _materiales = materiales;
+        _camiones = camiones;
+        _choferes = choferes;
+        _ubicaciones = ubicaciones;
+        _proyecto = proyectoInicial;
+        _material = materiales.isEmpty ? null : materiales.first;
+        _camion = camiones.isEmpty ? null : camiones.first;
+        _chofer = choferes.isEmpty ? null : choferes.first;
+        final origenes = _ubicacionesPara(proyectoInicial, 'banco');
+        final destinos = _ubicacionesPara(proyectoInicial, 'frente');
+        _origen = origenes.isEmpty ? null : origenes.first;
+        _destino = destinos.isEmpty ? null : destinos.first;
+        if (_cantidadController.text.isEmpty) {
+          _cantidadController.text = '14.500';
+        }
         _cargando = false;
       });
     } catch (error) {
@@ -139,8 +155,10 @@ class _RegistrarSalidaScreenState extends State<RegistrarSalidaScreen> {
   void _cambiarProyecto(Proyecto? proyecto) {
     setState(() {
       _proyecto = proyecto;
-      _origen = null;
-      _destino = null;
+      final origenes = _ubicacionesPara(proyecto, 'banco');
+      final destinos = _ubicacionesPara(proyecto, 'frente');
+      _origen = origenes.isEmpty ? null : origenes.first;
+      _destino = destinos.isEmpty ? null : destinos.first;
     });
   }
 
@@ -297,6 +315,45 @@ class _RegistrarSalidaScreenState extends State<RegistrarSalidaScreen> {
     return valor == null ? 'Selecciona $nombre.' : null;
   }
 
+  Widget _selectorBuscable<T>({
+    required String etiqueta,
+    required T? valor,
+    required List<T> opciones,
+    required String Function(T) mostrar,
+    required ValueChanged<T?> alSeleccionar,
+    bool habilitado = true,
+  }) {
+    return FormField<T>(
+      key: ValueKey('selector-$etiqueta-${valor.hashCode}-${opciones.length}'),
+      initialValue: valor,
+      validator: (seleccion) => _requerido(seleccion, etiqueta.toLowerCase()),
+      builder: (field) => DropdownMenu<T>(
+        initialSelection: valor,
+        enabled: habilitado && !_enviando,
+        enableFilter: true,
+        enableSearch: true,
+        requestFocusOnTap: true,
+        expandedInsets: EdgeInsets.zero,
+        menuHeight: 300,
+        label: Text(etiqueta),
+        errorText: field.errorText,
+        inputDecorationTheme: const InputDecorationTheme(
+          border: OutlineInputBorder(),
+        ),
+        dropdownMenuEntries: opciones
+            .map(
+              (opcion) =>
+                  DropdownMenuEntry<T>(value: opcion, label: mostrar(opcion)),
+            )
+            .toList(growable: false),
+        onSelected: (seleccion) {
+          field.didChange(seleccion);
+          alSeleccionar(seleccion);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -347,115 +404,46 @@ class _RegistrarSalidaScreenState extends State<RegistrarSalidaScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          DropdownButtonFormField<Proyecto>(
-            initialValue: _proyecto,
-            isExpanded: true,
-            decoration: const InputDecoration(
-              labelText: 'Proyecto',
-              border: OutlineInputBorder(),
-            ),
-            items: _proyectos
-                .map(
-                  (item) => DropdownMenuItem(
-                    value: item,
-                    child: Text(item.nombre, overflow: TextOverflow.ellipsis),
-                  ),
-                )
-                .toList(),
-            onChanged: _enviando ? null : _cambiarProyecto,
-            validator: (valor) => _requerido(valor, 'un proyecto'),
+          _selectorBuscable<Proyecto>(
+            etiqueta: 'Proyecto',
+            valor: _proyecto,
+            opciones: _proyectos,
+            mostrar: (item) => item.nombre,
+            alSeleccionar: _cambiarProyecto,
           ),
           const SizedBox(height: 16),
-          DropdownButtonFormField<Camion>(
-            initialValue: _camion,
-            isExpanded: true,
-            decoration: const InputDecoration(
-              labelText: 'Camión',
-              border: OutlineInputBorder(),
-            ),
-            items: _camiones
-                .map(
-                  (item) => DropdownMenuItem(
-                    value: item,
-                    child: Text(
-                      _nombreCamion(item),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                )
-                .toList(),
-            onChanged: _enviando
-                ? null
-                : (valor) => setState(() => _camion = valor),
-            validator: (valor) => _requerido(valor, 'un camión'),
+          _selectorBuscable<Camion>(
+            etiqueta: 'Camión',
+            valor: _camion,
+            opciones: _camiones,
+            mostrar: _nombreCamion,
+            alSeleccionar: (valor) => setState(() => _camion = valor),
           ),
           const SizedBox(height: 16),
-          DropdownButtonFormField<Ubicacion>(
-            key: ValueKey('origen-${_proyecto?.id}-${_origen?.id}'),
-            initialValue: _origen,
-            isExpanded: true,
-            decoration: const InputDecoration(
-              labelText: 'Origen',
-              border: OutlineInputBorder(),
-            ),
-            items: _origenesDisponibles
-                .map(
-                  (item) => DropdownMenuItem(
-                    value: item,
-                    child: Text(item.nombre, overflow: TextOverflow.ellipsis),
-                  ),
-                )
-                .toList(),
-            onChanged: _enviando || _proyecto == null
-                ? null
-                : (valor) => setState(() => _origen = valor),
-            validator: (valor) => _requerido(valor, 'un origen'),
+          _selectorBuscable<Ubicacion>(
+            etiqueta: 'Origen',
+            valor: _origen,
+            opciones: _origenesDisponibles,
+            mostrar: (item) => item.nombre,
+            habilitado: _proyecto != null,
+            alSeleccionar: (valor) => setState(() => _origen = valor),
           ),
           const SizedBox(height: 16),
-          DropdownButtonFormField<Ubicacion>(
-            key: ValueKey('destino-${_proyecto?.id}-${_destino?.id}'),
-            initialValue: _destino,
-            isExpanded: true,
-            decoration: const InputDecoration(
-              labelText: 'Destino',
-              border: OutlineInputBorder(),
-            ),
-            items: _destinosDisponibles
-                .map(
-                  (item) => DropdownMenuItem(
-                    value: item,
-                    child: Text(item.nombre, overflow: TextOverflow.ellipsis),
-                  ),
-                )
-                .toList(),
-            onChanged: _enviando || _proyecto == null
-                ? null
-                : (valor) => setState(() => _destino = valor),
-            validator: (valor) => _requerido(valor, 'un destino'),
+          _selectorBuscable<Ubicacion>(
+            etiqueta: 'Destino',
+            valor: _destino,
+            opciones: _destinosDisponibles,
+            mostrar: (item) => item.nombre,
+            habilitado: _proyecto != null,
+            alSeleccionar: (valor) => setState(() => _destino = valor),
           ),
           const SizedBox(height: 16),
-          DropdownButtonFormField<catalogo.Material>(
-            initialValue: _material,
-            isExpanded: true,
-            decoration: const InputDecoration(
-              labelText: 'Material',
-              border: OutlineInputBorder(),
-            ),
-            items: _materiales
-                .map(
-                  (item) => DropdownMenuItem(
-                    value: item,
-                    child: Text(
-                      '${item.nombre} (${item.unidadMedida})',
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                )
-                .toList(),
-            onChanged: _enviando
-                ? null
-                : (valor) => setState(() => _material = valor),
-            validator: (valor) => _requerido(valor, 'un material'),
+          _selectorBuscable<catalogo.Material>(
+            etiqueta: 'Material',
+            valor: _material,
+            opciones: _materiales,
+            mostrar: (item) => '${item.nombre} (${item.unidadMedida})',
+            alSeleccionar: (valor) => setState(() => _material = valor),
           ),
           const SizedBox(height: 16),
           TextFormField(
@@ -474,28 +462,12 @@ class _RegistrarSalidaScreenState extends State<RegistrarSalidaScreen> {
                 : null,
           ),
           const SizedBox(height: 16),
-          DropdownButtonFormField<Chofer>(
-            initialValue: _chofer,
-            isExpanded: true,
-            decoration: const InputDecoration(
-              labelText: 'Chofer',
-              border: OutlineInputBorder(),
-            ),
-            items: _choferes
-                .map(
-                  (item) => DropdownMenuItem(
-                    value: item,
-                    child: Text(
-                      item.nombreCompleto,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                )
-                .toList(),
-            onChanged: _enviando
-                ? null
-                : (valor) => setState(() => _chofer = valor),
-            validator: (valor) => _requerido(valor, 'un chofer'),
+          _selectorBuscable<Chofer>(
+            etiqueta: 'Chofer',
+            valor: _chofer,
+            opciones: _choferes,
+            mostrar: (item) => item.nombreCompleto,
+            alSeleccionar: (valor) => setState(() => _chofer = valor),
           ),
           const SizedBox(height: 16),
           TextFormField(

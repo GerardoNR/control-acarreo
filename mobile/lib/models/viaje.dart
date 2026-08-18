@@ -96,19 +96,24 @@ class Viaje {
   final String actualizadoEn;
 
   factory Viaje.fromJson(Map<String, dynamic> json) {
+    final proyecto = _proyectoDesdeJson(
+      json['proyecto'] as Map<String, dynamic>,
+    );
     return Viaje(
       id: json['id'] as String,
       idLegacy: json['id_legacy'] as int?,
       folio: json['folio'] as String,
-      proyecto: Proyecto.fromJson(json['proyecto'] as Map<String, dynamic>),
-      material: Material.fromJson(json['material'] as Map<String, dynamic>),
-      camion: Camion.fromJson(json['camion'] as Map<String, dynamic>),
-      chofer: Chofer.fromJson(json['chofer'] as Map<String, dynamic>),
-      ubicacionOrigen: Ubicacion.fromJson(
+      proyecto: proyecto,
+      material: _materialDesdeJson(json['material'] as Map<String, dynamic>),
+      camion: _camionDesdeJson(json['camion'] as Map<String, dynamic>),
+      chofer: _choferDesdeJson(json['chofer'] as Map<String, dynamic>),
+      ubicacionOrigen: _ubicacionDesdeJson(
         json['ubicacion_origen'] as Map<String, dynamic>,
+        proyecto,
       ),
-      ubicacionDestino: Ubicacion.fromJson(
+      ubicacionDestino: _ubicacionDesdeJson(
         json['ubicacion_destino'] as Map<String, dynamic>,
+        proyecto,
       ),
       checadorSalida: PersonaViaje.fromJson(
         json['checador_salida'] as Map<String, dynamic>,
@@ -147,5 +152,85 @@ class Viaje {
   static PersonaViaje? _personaOpcional(Object? json) {
     if (json == null) return null;
     return PersonaViaje.fromJson(json as Map<String, dynamic>);
+  }
+
+  static Proyecto _proyectoDesdeJson(Map<String, dynamic> json) {
+    if (json.containsKey('activo')) return Proyecto.fromJson(json);
+    return Proyecto(
+      id: json['id'] as int,
+      nombre: json['nombre'] as String,
+      clave: null,
+      desarrolladora: null,
+      descripcion: null,
+      notaRuta: null,
+      activo: true,
+      creadoEn: '',
+      actualizadoEn: '',
+    );
+  }
+
+  static Material _materialDesdeJson(Map<String, dynamic> json) {
+    if (json.containsKey('activo')) return Material.fromJson(json);
+    return Material(
+      id: json['id'] as int,
+      nombre: json['nombre'] as String,
+      unidadMedida: json['unidad_medida'] as String,
+      descripcion: null,
+      activo: true,
+      creadoEn: '',
+      actualizadoEn: '',
+    );
+  }
+
+  static Camion _camionDesdeJson(Map<String, dynamic> json) {
+    if (json.containsKey('activo')) return Camion.fromJson(json);
+    return Camion(
+      id: json['id'] as int,
+      placas: json['placas'] as String,
+      numeroEconomico: json['numero_economico'] as String?,
+      nfcTagUid: json['nfc_tag_uid'] as String,
+      capacidadM3: '',
+      tipoCamion: null,
+      marca: null,
+      modelo: null,
+      anio: null,
+      activo: true,
+      creadoEn: '',
+      actualizadoEn: '',
+    );
+  }
+
+  static Chofer _choferDesdeJson(Map<String, dynamic> json) {
+    if (json.containsKey('activo')) return Chofer.fromJson(json);
+    return Chofer(
+      id: json['id'] as int,
+      nombre: json['nombre'] as String,
+      apellidoPaterno: json['apellido_paterno'] as String?,
+      apellidoMaterno: json['apellido_materno'] as String?,
+      telefono: null,
+      licencia: null,
+      vigenciaLicencia: null,
+      activo: true,
+      creadoEn: '',
+      actualizadoEn: '',
+    );
+  }
+
+  static Ubicacion _ubicacionDesdeJson(
+    Map<String, dynamic> json,
+    Proyecto proyecto,
+  ) {
+    if (json.containsKey('proyecto')) return Ubicacion.fromJson(json);
+    return Ubicacion(
+      id: json['id'] as int,
+      proyecto: proyecto,
+      nombre: json['nombre'] as String,
+      tipo: json['tipo'] as String,
+      descripcion: null,
+      referencia: null,
+      activo: true,
+      creadoEn: '',
+      actualizadoEn: '',
+    );
   }
 }
