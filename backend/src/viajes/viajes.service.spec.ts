@@ -57,22 +57,38 @@ describe('ViajesService - registrar salida', () => {
   };
 
   beforeEach(() => {
-    proyecto = { id: 1, activo: true } as Proyecto;
+    proyecto = { id: 1, nombre: 'Proyecto', activo: true } as Proyecto;
     material = {
       id: 2,
+      nombre: 'Arena',
       activo: true,
       unidad_medida: 'm3',
     } as Material;
-    camion = { id: 3, activo: true, capacidad_m3: '20.00' } as Camion;
-    chofer = { id: 4, activo: true } as Chofer;
+    camion = {
+      id: 3,
+      activo: true,
+      placas: 'ABC-123',
+      numero_economico: 'ECO-001',
+      nfc_tag_uid: '04:A8:35:7B:92:61:80',
+      capacidad_m3: '20.00',
+    } as Camion;
+    chofer = {
+      id: 4,
+      nombre: 'Juan',
+      apellido_paterno: 'Pérez',
+      apellido_materno: null,
+      activo: true,
+    } as Chofer;
     origen = {
       id: 5,
+      nombre: 'Banco',
       activo: true,
       tipo: TipoUbicacion.BANCO,
       proyecto,
     } as Ubicacion;
     destino = {
       id: 6,
+      nombre: 'Frente',
       activo: true,
       tipo: TipoUbicacion.FRENTE,
       proyecto,
@@ -129,6 +145,30 @@ describe('ViajesService - registrar salida', () => {
     expect(manager.save).toHaveBeenCalledTimes(1);
     expect(resultado.id).toBe('13a8a44c-9f8e-4f5e-b822-c1972ba1cb85');
     expect(resultado.folio).toMatch(/^VIA-\d{8}-000042$/);
+    expect(resultado).toEqual(
+      expect.objectContaining({
+        estado: EstadoViaje.EN_TRANSITO,
+        proyecto: { id: 1, nombre: 'Proyecto' },
+        material: { id: 2, nombre: 'Arena', unidad_medida: 'm3' },
+        cantidad_salida: '14.5',
+        unidad_medida: 'm3',
+        observaciones_salida: 'Carga revisada',
+      }),
+    );
+    expect(resultado.camion).toMatchObject({ id: 3, placas: 'ABC-123' });
+    expect(resultado.chofer).toMatchObject({ id: 4, nombre: 'Juan' });
+    expect(resultado.ubicacion_origen).toMatchObject({
+      id: 5,
+      nombre: 'Banco',
+    });
+    expect(resultado.ubicacion_destino).toMatchObject({
+      id: 6,
+      nombre: 'Frente',
+    });
+    expect(resultado).not.toHaveProperty('cantidad_m3');
+    expect(resultado).not.toHaveProperty('folio_banco');
+    expect(resultado).not.toHaveProperty('checador_origen');
+    expect(resultado).not.toHaveProperty('sincronizado');
   });
 
   it('2. rechaza origen y destino iguales antes de abrir la transacción', async () => {

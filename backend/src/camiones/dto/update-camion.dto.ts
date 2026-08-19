@@ -8,6 +8,8 @@ import {
   Min,
 } from 'class-validator';
 
+const MAX_DECIMAL_10_2 = 99_999_999.99;
+
 export class UpdateCamionDto {
   @IsOptional()
   @IsString()
@@ -22,8 +24,13 @@ export class UpdateCamionDto {
   nfc_tag_uid?: string;
 
   @IsOptional()
-  @IsNumber()
+  @IsNumber({
+    allowInfinity: false,
+    allowNaN: false,
+    maxDecimalPlaces: 2,
+  })
   @IsPositive()
+  @Max(MAX_DECIMAL_10_2)
   capacidad_m3?: number;
 
   @IsOptional()

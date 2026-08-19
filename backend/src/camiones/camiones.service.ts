@@ -43,7 +43,7 @@ export class CamionesService {
   async create(dto: CreateCamionDto): Promise<Camion> {
     const camion = this.camionesRepository.create({
       ...dto,
-      capacidad_m3: dto.capacidad_m3?.toString(),
+      capacidad_m3: dto.capacidad_m3.toString(),
     });
     try {
       return await this.camionesRepository.save(camion);

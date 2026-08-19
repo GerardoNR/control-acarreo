@@ -34,7 +34,8 @@ export class UbicacionesService {
 
   async create(dto: CreateUbicacionDto): Promise<Ubicacion> {
     const proyecto = await this.findProyecto(dto.proyecto_id);
-    const { proyecto_id: _, ...datos } = dto;
+    const { proyecto_id, ...datos } = dto;
+    void proyecto_id;
     return this.ubicacionesRepository.save(
       this.ubicacionesRepository.create({ ...datos, proyecto }),
     );

@@ -98,7 +98,8 @@ export class ChecadoresService {
   }
 
   private toResponse(checador: Checador): ChecadorResponse {
-    const { password_hash: _passwordHash, ...response } = checador;
+    const { password_hash, ...response } = checador;
+    void password_hash;
     return response;
   }
 

@@ -116,7 +116,8 @@ export class AdministradoresService {
   }
 
   private toResponse(administrador: Administrador): AdministradorResponse {
-    const { password_hash: _passwordHash, ...response } = administrador;
+    const { password_hash, ...response } = administrador;
+    void password_hash;
     return response;
   }
 

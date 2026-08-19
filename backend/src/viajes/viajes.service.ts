@@ -141,7 +141,7 @@ export class ViajesService {
   async registrarSalida(
     dto: RegistrarSalidaViajeDto,
     usuario: AuthUser,
-  ): Promise<Viaje> {
+  ): Promise<ViajeResponse> {
     if (usuario.rol !== Role.CHECADOR) {
       throw new ForbiddenException(
         'Solo un checador puede registrar una salida',
@@ -250,7 +250,7 @@ export class ViajesService {
     manager: EntityManager,
     dto: RegistrarSalidaViajeDto,
     usuario: AuthUser,
-  ): Promise<Viaje> {
+  ): Promise<ViajeResponse> {
     const proyecto = await manager.findOneBy(Proyecto, {
       id: dto.proyecto_id,
     });
@@ -384,7 +384,8 @@ export class ViajesService {
       motivo_cancelacion: null,
     });
 
-    return manager.save(Viaje, viaje);
+    const viajeGuardado = await manager.save(Viaje, viaje);
+    return this.aRespuesta(viajeGuardado);
   }
 
   private validarActivo(entidad: { activo: boolean }, mensaje: string): void {
