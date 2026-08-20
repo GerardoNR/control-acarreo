@@ -6,6 +6,11 @@ import '../../models/registrar_llegada_request.dart';
 import '../../models/viaje.dart';
 import '../../services/catalogos_service.dart';
 import '../../services/viajes_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_spacing.dart';
+import '../../widgets/app_card.dart';
+import '../../widgets/primary_button.dart';
+import '../../widgets/status_badge.dart';
 
 double? normalizarCantidadLlegada(String texto) {
   final valor = texto.trim();
@@ -269,6 +274,19 @@ class _ViajeActivoScreenState extends State<ViajeActivoScreen> {
         : '$numero · ${camion.placas}';
   }
 
+  String _identificadorCamion(Camion camion) {
+    final numero = camion.numeroEconomico?.trim();
+    return numero == null || numero.isEmpty ? camion.placas : numero;
+  }
+
+  TripStatus _estadoVisual(String estado) {
+    return switch (estado) {
+      'completado' => TripStatus.completed,
+      'cancelado' => TripStatus.cancelled,
+      _ => TripStatus.inTransit,
+    };
+  }
+
   String _formatearFecha(String valor) {
     final fecha = DateTime.tryParse(valor)?.toLocal();
     if (fecha == null) return valor;
@@ -319,147 +337,325 @@ class _ViajeActivoScreenState extends State<ViajeActivoScreen> {
       );
     }
 
+    final colors = AppColors.of(context);
+    final textTheme = Theme.of(context).textTheme;
     return ListView(
-      padding: const EdgeInsets.all(16),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.mobileHorizontal,
+        AppSpacing.md,
+        AppSpacing.mobileHorizontal,
+        AppSpacing.xl,
+      ),
       children: [
-        DropdownButtonFormField<Camion>(
-          initialValue: _camionSeleccionado,
-          isExpanded: true,
-          decoration: const InputDecoration(
-            labelText: 'Camión',
-            border: OutlineInputBorder(),
-          ),
-          items: _camiones
-              .map(
-                (camion) => DropdownMenuItem(
-                  value: camion,
-                  child: Text(
-                    _nombreCamion(camion),
-                    overflow: TextOverflow.ellipsis,
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'CONSULTA DE UNIDAD',
+                  style: textTheme.labelLarge?.copyWith(
+                    color: colors.primary,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.1,
                   ),
                 ),
-              )
-              .toList(),
-          onChanged: _consultando || _registrandoLlegada
-              ? null
-              : _seleccionarCamion,
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  'Selecciona la unidad que llegó al destino',
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                AppCard(
+                  child: Column(
+                    children: [
+                      DropdownButtonFormField<Camion>(
+                        initialValue: _camionSeleccionado,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Camión',
+                          prefixIcon: Icon(Icons.local_shipping_outlined),
+                        ),
+                        items: _camiones
+                            .map(
+                              (camion) => DropdownMenuItem(
+                                value: camion,
+                                child: Text(
+                                  _nombreCamion(camion),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: _consultando || _registrandoLlegada
+                            ? null
+                            : _seleccionarCamion,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      PrimaryButton(
+                        label: _consultando
+                            ? 'CONSULTANDO...'
+                            : 'CONSULTAR VIAJE',
+                        icon: Icons.search,
+                        isLoading: _consultando,
+                        onPressed:
+                            _camionSeleccionado == null || _registrandoLlegada
+                            ? null
+                            : _consultarViaje,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                if (_mensajeExito != null)
+                  _mensajeEstado(
+                    mensaje: _mensajeExito!,
+                    icono: Icons.check_circle_outline,
+                    color: colors.success,
+                  ),
+                if (_camionSeleccionado == null && !_consultando)
+                  _mensajeEstado(
+                    mensaje:
+                        'Selecciona un camión para consultar su viaje activo.',
+                    icono: Icons.touch_app_outlined,
+                    color: colors.info,
+                  ),
+                if (_errorConsulta != null)
+                  _mensajeEstado(
+                    mensaje: _errorConsulta!,
+                    icono: Icons.error_outline,
+                    color: colors.error,
+                  ),
+                if (_sinViaje)
+                  _mensajeEstado(
+                    mensaje:
+                        'Este camión no tiene un viaje activo actualmente.',
+                    icono: Icons.route_outlined,
+                    color: colors.textSecondary,
+                  ),
+                if (_viaje != null) _detalleViaje(_viaje!),
+              ],
+            ),
+          ),
         ),
-        const SizedBox(height: 16),
-        FilledButton.icon(
-          onPressed:
-              _camionSeleccionado == null || _consultando || _registrandoLlegada
-              ? null
-              : _consultarViaje,
-          icon: _consultando
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.search),
-          label: Text(_consultando ? 'CONSULTANDO...' : 'CONSULTAR VIAJE'),
-          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-        ),
-        const SizedBox(height: 24),
-        if (_mensajeExito != null)
-          Card(
-            color: Theme.of(context).colorScheme.primaryContainer,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(_mensajeExito!, textAlign: TextAlign.center),
-            ),
-          ),
-        if (_camionSeleccionado == null && !_consultando)
-          const Text(
-            'Selecciona un camión para consultar su viaje activo.',
-            textAlign: TextAlign.center,
-          ),
-        if (_errorConsulta != null)
-          Card(
-            color: Theme.of(context).colorScheme.errorContainer,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(_errorConsulta!, textAlign: TextAlign.center),
-            ),
-          ),
-        if (_sinViaje)
-          const Card(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Text(
-                'Este camión no tiene un viaje activo actualmente.',
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-        if (_viaje != null) _detalleViaje(_viaje!),
       ],
     );
   }
 
   Widget _detalleViaje(Viaje viaje) {
+    final colors = AppColors.of(context);
+    final textTheme = Theme.of(context).textTheme;
     final observaciones = viaje.observacionesSalida?.trim();
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(viaje.folio, style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 4),
-            Text('Estado: ${viaje.estado}'),
-            const Divider(height: 24),
-            _dato('Proyecto', viaje.proyecto.nombre),
-            _dato('Camión', _nombreCamion(viaje.camion)),
-            _dato('Chofer', viaje.chofer.nombreCompleto),
-            _dato('Material', viaje.material.nombre),
-            _dato(
-              'Cantidad de salida',
-              '${viaje.cantidadSalida} ${viaje.unidadMedida}',
-            ),
-            _dato('Origen', viaje.ubicacionOrigen.nombre),
-            _dato('Destino', viaje.ubicacionDestino.nombre),
-            _dato(
-              'Fecha y hora de salida',
-              _formatearFecha(viaje.fechaHoraSalida),
-            ),
-            if (observaciones != null && observaciones.isNotEmpty)
-              _dato('Observaciones', observaciones),
-            const SizedBox(height: 8),
-            FilledButton.icon(
-              onPressed: _registrandoLlegada
-                  ? null
-                  : () => _iniciarRegistroLlegada(viaje),
-              icon: _registrandoLlegada
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.task_alt),
-              label: Text(
-                _registrandoLlegada
-                    ? 'REGISTRANDO LLEGADA...'
-                    : 'REGISTRAR LLEGADA',
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'VIAJE EN CURSO',
+          style: textTheme.labelLarge?.copyWith(
+            color: colors.textSecondary,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        AppCard(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.primaryLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  child: Icon(
+                    Icons.local_shipping_outlined,
+                    color: colors.primary,
+                    size: 28,
+                  ),
+                ),
               ),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(52),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _identificadorCamion(viaje.camion),
+                      style: textTheme.titleLarge,
+                    ),
+                    if (_identificadorCamion(viaje.camion) !=
+                        viaje.camion.placas)
+                      Text(
+                        viaje.camion.placas,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    const SizedBox(height: AppSpacing.sm),
+                    StatusBadge(status: _estadoVisual(viaje.estado)),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        _tituloSeccion('RUTA'),
+        const SizedBox(height: AppSpacing.xs),
+        AppCard(
+          child: Column(
+            children: [
+              _puntoRuta(
+                icono: Icons.trip_origin,
+                etiqueta: 'Origen',
+                valor: viaje.ubicacionOrigen.nombre,
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                child: Icon(
+                  Icons.arrow_downward,
+                  size: 20,
+                  color: colors.textSecondary,
+                ),
+              ),
+              _puntoRuta(
+                icono: Icons.location_on_outlined,
+                etiqueta: 'Destino',
+                valor: viaje.ubicacionDestino.nombre,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        _tituloSeccion('DETALLES DEL VIAJE'),
+        const SizedBox(height: AppSpacing.xs),
+        AppCard(
+          child: Column(
+            children: [
+              _dato('Proyecto', viaje.proyecto.nombre),
+              _dato('Material', viaje.material.nombre),
+              _dato(
+                'Cantidad de salida',
+                '${viaje.cantidadSalida} ${viaje.unidadMedida}',
+              ),
+              _dato('Chofer', viaje.chofer.nombreCompleto),
+              _dato('Folio', viaje.folio),
+              _dato(
+                'Fecha y hora de salida',
+                _formatearFecha(viaje.fechaHoraSalida),
+                ultimo: observaciones == null || observaciones.isEmpty,
+              ),
+              if (observaciones != null && observaciones.isNotEmpty)
+                _dato('Nota de salida', observaciones, ultimo: true),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        PrimaryButton(
+          label: _registrandoLlegada
+              ? 'REGISTRANDO LLEGADA...'
+              : 'REGISTRAR LLEGADA',
+          icon: Icons.task_alt,
+          isLoading: _registrandoLlegada,
+          onPressed: () => _iniciarRegistroLlegada(viaje),
+        ),
+      ],
+    );
+  }
+
+  Widget _mensajeEstado({
+    required String mensaje,
+    required IconData icono,
+    required Color color,
+  }) {
+    return AppCard(
+      margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+      child: Row(
+        children: [
+          Icon(icono, color: color),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(child: Text(mensaje)),
+        ],
+      ),
+    );
+  }
+
+  Widget _tituloSeccion(String titulo) {
+    final colors = AppColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(left: AppSpacing.xxs),
+      child: Text(
+        titulo,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          color: colors.textSecondary,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.9,
         ),
       ),
     );
   }
 
-  Widget _dato(String etiqueta, String valor) {
+  Widget _puntoRuta({
+    required IconData icono,
+    required String etiqueta,
+    required String valor,
+  }) {
+    final colors = AppColors.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icono, color: colors.primary, size: 22),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                etiqueta,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+              ),
+              Text(valor, style: Theme.of(context).textTheme.titleMedium),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _dato(String etiqueta, String valor, {bool ultimo = false}) {
+    final colors = AppColors.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Column(
+      padding: EdgeInsets.only(bottom: ultimo ? 0 : AppSpacing.sm),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(etiqueta, style: Theme.of(context).textTheme.labelLarge),
-          Text(valor),
+          Expanded(
+            flex: 4,
+            child: Text(
+              etiqueta,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            flex: 6,
+            child: Text(
+              valor,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
         ],
       ),
     );
@@ -518,6 +714,7 @@ class _RegistrarLlegadaDialogState extends State<_RegistrarLlegadaDialog> {
   @override
   Widget build(BuildContext context) {
     final viaje = widget.viaje;
+    final colors = AppColors.of(context);
     return AlertDialog(
       title: const Text('Registrar llegada'),
       content: Form(
@@ -527,17 +724,38 @@ class _RegistrarLlegadaDialogState extends State<_RegistrarLlegadaDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Folio: ${viaje.folio}'),
-              Text('Camión: ${widget.nombreCamion}'),
-              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.local_shipping_outlined, color: colors.primary),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.nombreCamion,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        Text(
+                          viaje.folio,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
               TextFormField(
                 controller: _cantidadController,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
                 decoration: InputDecoration(
-                  labelText: 'Cantidad de llegada (${viaje.unidadMedida})',
-                  border: const OutlineInputBorder(),
+                  labelText: 'Cantidad de llegada',
+                  prefixIcon: const Icon(Icons.scale_outlined),
+                  suffixText: viaje.unidadMedida,
                   helperText: 'Opcional. Máximo 3 decimales.',
                 ),
                 validator: (texto) {
@@ -548,13 +766,17 @@ class _RegistrarLlegadaDialogState extends State<_RegistrarLlegadaDialog> {
                       : null;
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
               TextFormField(
                 controller: _observacionesController,
-                maxLines: 3,
+                minLines: 2,
+                maxLines: 4,
+                textCapitalization: TextCapitalization.sentences,
                 decoration: const InputDecoration(
-                  labelText: 'Observaciones de llegada (opcional)',
-                  border: OutlineInputBorder(),
+                  labelText: 'Nota',
+                  hintText: 'Agregar una nota (opcional)...',
+                  alignLabelWithHint: true,
+                  prefixIcon: Icon(Icons.notes_outlined),
                 ),
               ),
             ],
