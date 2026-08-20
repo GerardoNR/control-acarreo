@@ -2,6 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/auth_service.dart';
+import '../../theme/app_radius.dart';
+import '../../theme/app_spacing.dart';
+import '../../widgets/truck_loading_indicator.dart';
 import '../home/home_screen.dart';
 import 'login_screen.dart';
 
@@ -65,19 +68,44 @@ class _AuthGateState extends State<AuthGate> {
     final pantalla = _pantalla;
     if (pantalla != null) return pantalla;
 
-    return const Scaffold(
+    return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Control de Acarreo'),
-              SizedBox(height: 24),
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Verificando sesión...'),
-            ],
-          ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxHeight < 560;
+            final logoSize = compact ? 88.0 : 112.0;
+
+            return Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 360),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ClipRRect(
+                        borderRadius: AppRadius.largeBorder,
+                        child: Image.asset(
+                          'assets/imagenes/indi_logo.png',
+                          width: logoSize,
+                          height: logoSize,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                      SizedBox(height: compact ? AppSpacing.md : AppSpacing.lg),
+                      Text(
+                        'CONTROL DE ACARREO',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: compact ? AppSpacing.lg : AppSpacing.xl),
+                      const TruckLoadingIndicator(message: 'Cargando...'),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

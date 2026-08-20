@@ -35,15 +35,15 @@ class AppColors extends ThemeExtension<AppColors> {
   );
 
   static const dark = AppColors(
-    primary: Color(0xFF3B82F6),
+    primary: Color(0xFF4F8CFF),
     primaryDark: Color(0xFF2563EB),
-    primaryLight: Color(0xFF1E3A5F),
-    background: Color(0xFF0F172A),
-    surface: Color(0xFF1E293B),
-    surfaceVariant: Color(0xFF334155),
-    textPrimary: Color(0xFFF8FAFC),
-    textSecondary: Color(0xFFCBD5E1),
-    border: Color(0xFF475569),
+    primaryLight: Color(0xFF1E3554),
+    background: Color(0xFF1A1D22),
+    surface: Color(0xFF232A33),
+    surfaceVariant: Color(0xFF2B3440),
+    textPrimary: Color(0xFFF3F4F6),
+    textSecondary: Color(0xFFB8C0CC),
+    border: Color(0xFF3B4654),
     success: Color(0xFF4ADE80),
     warning: Color(0xFFFBBF24),
     error: Color(0xFFF87171),
