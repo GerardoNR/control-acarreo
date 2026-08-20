@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { QueryFailedError, Repository } from 'typeorm';
+import { Checador } from '../checadores/checador.entity';
 import { Administrador } from './administrador.entity';
 import { CreateAdministradorDto } from './dto/create-administrador.dto';
 import { UpdateAdministradorDto } from './dto/update-administrador.dto';
@@ -19,6 +20,8 @@ export class AdministradoresService {
   constructor(
     @InjectRepository(Administrador)
     private readonly administradoresRepository: Repository<Administrador>,
+    @InjectRepository(Checador)
+    private readonly checadoresRepository: Repository<Checador>,
   ) {}
 
   async findAll(): Promise<AdministradorResponse[]> {
@@ -56,10 +59,7 @@ export class AdministradoresService {
     dto: UpdateAdministradorDto,
   ): Promise<AdministradorResponse> {
     const administrador = await this.findEntity(id);
-    if (
-      dto.usuario !== undefined &&
-      dto.usuario !== administrador.usuario
-    ) {
+    if (dto.usuario !== undefined && dto.usuario !== administrador.usuario) {
       await this.ensureUsuarioDisponible(dto.usuario, id);
       administrador.usuario = dto.usuario;
     }
@@ -105,13 +105,19 @@ export class AdministradoresService {
     usuario: string,
     currentId?: number,
   ): Promise<void> {
-    const existente = await this.administradoresRepository.findOneBy({
-      usuario,
-    });
+    const existente = await this.administradoresRepository
+      .createQueryBuilder('administrador')
+      .where('LOWER(administrador.usuario) = :usuario', { usuario })
+      .getOne();
     if (existente && existente.id !== currentId) {
-      throw new ConflictException(
-        'Ya existe un administrador con ese usuario',
-      );
+      throw new ConflictException('Ya existe un administrador con ese usuario');
+    }
+    const checador = await this.checadoresRepository
+      .createQueryBuilder('checador')
+      .where('LOWER(checador.usuario) = :usuario', { usuario })
+      .getOne();
+    if (checador) {
+      throw new ConflictException('Ya existe un checador con ese usuario');
     }
   }
 

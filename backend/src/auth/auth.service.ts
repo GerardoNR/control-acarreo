@@ -57,14 +57,25 @@ export class AuthService {
   private async findUsuarioConPassword(
     usuario: string,
   ): Promise<UsuarioConPassword | null> {
-    const administrador = await this.administradoresRepository
+    const administradorQuery = this.administradoresRepository
       .createQueryBuilder('administrador')
       .addSelect('administrador.password_hash')
-      .where('administrador.usuario = :usuario', { usuario })
+      .where('LOWER(administrador.usuario) = :usuario', { usuario })
       .andWhere('administrador.activo = :activo', { activo: true })
       .getOne();
 
-    if (administrador) {
+    const checadorQuery = this.checadoresRepository
+      .createQueryBuilder('checador')
+      .addSelect('checador.password_hash')
+      .where('LOWER(checador.usuario) = :usuario', { usuario })
+      .andWhere('checador.activo = :activo', { activo: true })
+      .getOne();
+    const [administrador, checador] = await Promise.all([
+      administradorQuery,
+      checadorQuery,
+    ]);
+
+    if (administrador && !checador) {
       return {
         id: administrador.id,
         nombre: administrador.nombre,
@@ -74,14 +85,7 @@ export class AuthService {
       };
     }
 
-    const checador = await this.checadoresRepository
-      .createQueryBuilder('checador')
-      .addSelect('checador.password_hash')
-      .where('checador.usuario = :usuario', { usuario })
-      .andWhere('checador.activo = :activo', { activo: true })
-      .getOne();
-
-    if (!checador) return null;
+    if (!checador || administrador) return null;
 
     return {
       id: checador.id,

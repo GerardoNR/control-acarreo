@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { QueryFailedError, Repository } from 'typeorm';
+import { Administrador } from '../administradores/administrador.entity';
 import { Checador } from './checador.entity';
 import { CreateChecadorDto } from './dto/create-checador.dto';
 import { UpdateChecadorDto } from './dto/update-checador.dto';
@@ -19,6 +20,8 @@ export class ChecadoresService {
   constructor(
     @InjectRepository(Checador)
     private readonly checadoresRepository: Repository<Checador>,
+    @InjectRepository(Administrador)
+    private readonly administradoresRepository: Repository<Administrador>,
   ) {}
 
   async findAll(): Promise<ChecadorResponse[]> {
@@ -48,10 +51,7 @@ export class ChecadoresService {
     }
   }
 
-  async update(
-    id: number,
-    dto: UpdateChecadorDto,
-  ): Promise<ChecadorResponse> {
+  async update(id: number, dto: UpdateChecadorDto): Promise<ChecadorResponse> {
     const checador = await this.findEntity(id);
     if (dto.usuario !== undefined && dto.usuario !== checador.usuario) {
       await this.ensureUsuarioDisponible(dto.usuario, id);
@@ -91,9 +91,19 @@ export class ChecadoresService {
     usuario: string,
     currentId?: number,
   ): Promise<void> {
-    const existente = await this.checadoresRepository.findOneBy({ usuario });
+    const existente = await this.checadoresRepository
+      .createQueryBuilder('checador')
+      .where('LOWER(checador.usuario) = :usuario', { usuario })
+      .getOne();
     if (existente && existente.id !== currentId) {
       throw new ConflictException('Ya existe un checador con ese usuario');
+    }
+    const administrador = await this.administradoresRepository
+      .createQueryBuilder('administrador')
+      .where('LOWER(administrador.usuario) = :usuario', { usuario })
+      .getOne();
+    if (administrador) {
+      throw new ConflictException('Ya existe un administrador con ese usuario');
     }
   }
 
