@@ -45,7 +45,7 @@ void main() {
       const MaterialApp(home: HomeScreen(usuario: usuario)),
     );
 
-    expect(find.text('REGISTRAR SALIDA'), findsOneWidget);
+    expect(find.text('Registrar salida'), findsOneWidget);
     expect(find.text('VIAJE ACTIVO / REGISTRAR LLEGADA'), findsOneWidget);
     expect(find.text('HISTORIAL DE VIAJES'), findsOneWidget);
     expect(find.text('Cerrar sesión'), findsOneWidget);

@@ -10,6 +10,10 @@ import '../../models/ubicacion.dart';
 import '../../models/viaje.dart';
 import '../../services/catalogos_service.dart';
 import '../../services/viajes_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_spacing.dart';
+import '../../widgets/app_card.dart';
+import '../../widgets/primary_button.dart';
 
 double? normalizarCantidadSalida(String texto) {
   final valor = texto.trim();
@@ -317,6 +321,7 @@ class _RegistrarSalidaScreenState extends State<RegistrarSalidaScreen> {
 
   Widget _selectorBuscable<T>({
     required String etiqueta,
+    required IconData icono,
     required T? valor,
     required List<T> opciones,
     required String Function(T) mostrar,
@@ -336,10 +341,8 @@ class _RegistrarSalidaScreenState extends State<RegistrarSalidaScreen> {
         expandedInsets: EdgeInsets.zero,
         menuHeight: 300,
         label: Text(etiqueta),
+        leadingIcon: Icon(icono),
         errorText: field.errorText,
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
-        ),
         dropdownMenuEntries: opciones
             .map(
               (opcion) =>
@@ -399,103 +402,206 @@ class _RegistrarSalidaScreenState extends State<RegistrarSalidaScreen> {
       );
     }
 
-    return Form(
-      key: _formKey,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _selectorBuscable<Proyecto>(
-            etiqueta: 'Proyecto',
-            valor: _proyecto,
-            opciones: _proyectos,
-            mostrar: (item) => item.nombre,
-            alSeleccionar: _cambiarProyecto,
+    final colors = AppColors.of(context);
+    final textTheme = Theme.of(context).textTheme;
+
+    return LayoutBuilder(
+      builder: (context, constraints) => Form(
+        key: _formKey,
+        child: ListView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.mobileHorizontal,
+            AppSpacing.md,
+            AppSpacing.mobileHorizontal,
+            AppSpacing.xl,
           ),
-          const SizedBox(height: 16),
-          _selectorBuscable<Camion>(
-            etiqueta: 'Camión',
-            valor: _camion,
-            opciones: _camiones,
-            mostrar: _nombreCamion,
-            alSeleccionar: (valor) => setState(() => _camion = valor),
-          ),
-          const SizedBox(height: 16),
-          _selectorBuscable<Ubicacion>(
-            etiqueta: 'Origen',
-            valor: _origen,
-            opciones: _origenesDisponibles,
-            mostrar: (item) => item.nombre,
-            habilitado: _proyecto != null,
-            alSeleccionar: (valor) => setState(() => _origen = valor),
-          ),
-          const SizedBox(height: 16),
-          _selectorBuscable<Ubicacion>(
-            etiqueta: 'Destino',
-            valor: _destino,
-            opciones: _destinosDisponibles,
-            mostrar: (item) => item.nombre,
-            habilitado: _proyecto != null,
-            alSeleccionar: (valor) => setState(() => _destino = valor),
-          ),
-          const SizedBox(height: 16),
-          _selectorBuscable<catalogo.Material>(
-            etiqueta: 'Material',
-            valor: _material,
-            opciones: _materiales,
-            mostrar: (item) => '${item.nombre} (${item.unidadMedida})',
-            alSeleccionar: (valor) => setState(() => _material = valor),
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _cantidadController,
-            enabled: !_enviando,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: _material == null
-                  ? 'Cantidad de salida'
-                  : 'Cantidad de salida (${_material!.unidadMedida})',
-              border: const OutlineInputBorder(),
-              helperText: 'Número positivo, máximo 3 decimales.',
+          children: [
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 640),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'NUEVO VIAJE',
+                      style: textTheme.labelLarge?.copyWith(
+                        color: colors.primary,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      'Registra los datos de salida del camión',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    _seccionFormulario(
+                      titulo: 'UNIDAD',
+                      child: _selectorBuscable<Camion>(
+                        etiqueta: 'Camión',
+                        icono: Icons.local_shipping_outlined,
+                        valor: _camion,
+                        opciones: _camiones,
+                        mostrar: _nombreCamion,
+                        alSeleccionar: (valor) =>
+                            setState(() => _camion = valor),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    _seccionFormulario(
+                      titulo: 'DATOS DEL VIAJE',
+                      child: Column(
+                        children: [
+                          _selectorBuscable<Proyecto>(
+                            etiqueta: 'Proyecto',
+                            icono: Icons.business_outlined,
+                            valor: _proyecto,
+                            opciones: _proyectos,
+                            mostrar: (item) => item.nombre,
+                            alSeleccionar: _cambiarProyecto,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          _selectorBuscable<Ubicacion>(
+                            etiqueta: 'Origen',
+                            icono: Icons.trip_origin,
+                            valor: _origen,
+                            opciones: _origenesDisponibles,
+                            mostrar: (item) => item.nombre,
+                            habilitado: _proyecto != null,
+                            alSeleccionar: (valor) =>
+                                setState(() => _origen = valor),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.xxs,
+                            ),
+                            child: Icon(
+                              Icons.arrow_downward,
+                              size: 18,
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                          _selectorBuscable<Ubicacion>(
+                            etiqueta: 'Destino',
+                            icono: Icons.location_on_outlined,
+                            valor: _destino,
+                            opciones: _destinosDisponibles,
+                            mostrar: (item) => item.nombre,
+                            habilitado: _proyecto != null,
+                            alSeleccionar: (valor) =>
+                                setState(() => _destino = valor),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    _seccionFormulario(
+                      titulo: 'CARGA',
+                      child: Column(
+                        children: [
+                          _selectorBuscable<catalogo.Material>(
+                            etiqueta: 'Material',
+                            icono: Icons.inventory_2_outlined,
+                            valor: _material,
+                            opciones: _materiales,
+                            mostrar: (item) =>
+                                '${item.nombre} (${item.unidadMedida})',
+                            alSeleccionar: (valor) =>
+                                setState(() => _material = valor),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          TextFormField(
+                            controller: _cantidadController,
+                            enabled: !_enviando,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            textInputAction: TextInputAction.next,
+                            decoration: InputDecoration(
+                              labelText: 'Cantidad',
+                              prefixIcon: const Icon(Icons.scale_outlined),
+                              suffixText: _material?.unidadMedida,
+                              helperText:
+                                  'Número positivo, máximo 3 decimales.',
+                            ),
+                            validator: (valor) =>
+                                normalizarCantidadSalida(valor ?? '') == null
+                                ? 'Ingresa una cantidad válida.'
+                                : null,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    _seccionFormulario(
+                      titulo: 'CHOFER',
+                      child: _selectorBuscable<Chofer>(
+                        etiqueta: 'Chofer',
+                        icono: Icons.person_outline,
+                        valor: _chofer,
+                        opciones: _choferes,
+                        mostrar: (item) => item.nombreCompleto,
+                        alSeleccionar: (valor) =>
+                            setState(() => _chofer = valor),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    _seccionFormulario(
+                      titulo: 'NOTA',
+                      child: TextFormField(
+                        controller: _observacionesController,
+                        enabled: !_enviando,
+                        minLines: 2,
+                        maxLines: 4,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: const InputDecoration(
+                          labelText: 'Nota',
+                          hintText: 'Agregar una nota (opcional)...',
+                          alignLabelWithHint: true,
+                          prefixIcon: Icon(Icons.notes_outlined),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    PrimaryButton(
+                      label: _enviando ? 'REGISTRANDO...' : 'REGISTRAR SALIDA',
+                      icon: Icons.local_shipping_outlined,
+                      isLoading: _enviando,
+                      onPressed: _confirmarYRegistrar,
+                    ),
+                  ],
+                ),
+              ),
             ),
-            validator: (valor) => normalizarCantidadSalida(valor ?? '') == null
-                ? 'Ingresa una cantidad válida.'
-                : null,
-          ),
-          const SizedBox(height: 16),
-          _selectorBuscable<Chofer>(
-            etiqueta: 'Chofer',
-            valor: _chofer,
-            opciones: _choferes,
-            mostrar: (item) => item.nombreCompleto,
-            alSeleccionar: (valor) => setState(() => _chofer = valor),
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _observacionesController,
-            enabled: !_enviando,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Observaciones (opcional)',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: _enviando ? null : _confirmarYRegistrar,
-            icon: _enviando
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.local_shipping_outlined),
-            label: Text(_enviando ? 'REGISTRANDO...' : 'REGISTRAR SALIDA'),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(56),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _seccionFormulario({required String titulo, required Widget child}) {
+    final colors = AppColors.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.xxs),
+          child: Text(
+            titulo,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: colors.textSecondary,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.9,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        AppCard(child: child),
+      ],
     );
   }
 }
