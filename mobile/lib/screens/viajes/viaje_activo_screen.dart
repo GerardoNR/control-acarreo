@@ -9,6 +9,7 @@ import '../../services/viajes_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/app_card.dart';
+import '../../widgets/app_state_view.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/status_badge.dart';
 
@@ -305,35 +306,13 @@ class _ViajeActivoScreenState extends State<ViajeActivoScreen> {
 
   Widget _construirContenido() {
     if (_cargandoCatalogo) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Cargando camiones...'),
-          ],
-        ),
-      );
+      return const AppStateView.loading(message: 'Cargando camiones...');
     }
 
     if (_errorCatalogo != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(_errorCatalogo!, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: _cargarCamiones,
-                icon: const Icon(Icons.refresh),
-                label: const Text('REINTENTAR'),
-              ),
-            ],
-          ),
-        ),
+      return AppStateView.error(
+        message: _errorCatalogo!,
+        onRetry: _cargarCamiones,
       );
     }
 

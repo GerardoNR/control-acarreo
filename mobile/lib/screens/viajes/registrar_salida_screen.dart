@@ -13,6 +13,7 @@ import '../../services/viajes_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/app_card.dart';
+import '../../widgets/app_state_view.dart';
 import '../../widgets/primary_button.dart';
 
 double? normalizarCantidadSalida(String texto) {
@@ -370,35 +371,13 @@ class _RegistrarSalidaScreenState extends State<RegistrarSalidaScreen> {
 
   Widget _construirContenido() {
     if (_cargando) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Cargando catálogos...'),
-          ],
-        ),
-      );
+      return const AppStateView.loading(message: 'Cargando catálogos...');
     }
 
     if (_errorCarga != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(_errorCarga!, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: _cargarCatalogos,
-                icon: const Icon(Icons.refresh),
-                label: const Text('REINTENTAR'),
-              ),
-            ],
-          ),
-        ),
+      return AppStateView.error(
+        message: _errorCarga!,
+        onRetry: _cargarCatalogos,
       );
     }
 
@@ -438,7 +417,7 @@ class _RegistrarSalidaScreenState extends State<RegistrarSalidaScreen> {
                         color: colors.textSecondary,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.lg),
+                    const SizedBox(height: AppSpacing.md),
                     _seccionFormulario(
                       titulo: 'UNIDAD',
                       child: _selectorBuscable<Camion>(

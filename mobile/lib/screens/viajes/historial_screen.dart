@@ -11,6 +11,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/app_card.dart';
+import '../../widgets/app_state_view.dart';
 import '../../widgets/status_badge.dart';
 import 'detalle_viaje_screen.dart';
 
@@ -222,22 +223,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
 
   Widget _contenido() {
     if (_cargandoInicial) {
-      final colors = AppColors.of(context);
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              'Cargando historial...',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
-            ),
-          ],
-        ),
-      );
+      return const AppStateView.loading(message: 'Cargando historial...');
     }
 
     if (_resultado == null && _error != null) {
@@ -322,30 +308,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
   }
 
   Widget _estadoInicialError() {
-    final colors = AppColors.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, size: 42, color: colors.error),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              _error!,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            FilledButton.icon(
-              onPressed: _cargarInicial,
-              icon: const Icon(Icons.refresh),
-              label: const Text('REINTENTAR'),
-            ),
-          ],
-        ),
-      ),
-    );
+    return AppStateView.error(message: _error!, onRetry: _cargarInicial);
   }
 
   Widget _selectorEstado() {
