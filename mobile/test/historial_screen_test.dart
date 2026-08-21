@@ -23,11 +23,18 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('1 viajes encontrados'), findsOneWidget);
+    expect(find.text('1 viaje'), findsOneWidget);
     expect(find.text('VIA-20260817-000042'), findsOneWidget);
 
+    await tester.tap(find.text('Completados'));
+    await tester.pumpAndSettle();
+    expect(viajesService.estado, 'completado');
+
+    await tester.tap(find.text('Buscar y filtrar'));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), '  000042  ');
-    await tester.tap(find.text('APLICAR FILTROS'));
+    await tester.ensureVisible(find.text('APLICAR'));
+    await tester.tap(find.text('APLICAR'));
     await tester.pumpAndSettle();
     expect(viajesService.folio, '000042');
     expect(viajesService.pagina, 1);
@@ -53,12 +60,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('No se encontraron viajes con los filtros seleccionados.'),
-      findsOneWidget,
+    expect(find.text('No hay viajes'), findsOneWidget);
+    final siguiente = tester.widget<TextButton>(
+      find.widgetWithText(TextButton, 'SIGUIENTE'),
     );
-    await tester.ensureVisible(find.text('SIGUIENTE'));
-    await tester.tap(find.text('SIGUIENTE'));
+    siguiente.onPressed!();
     await tester.pumpAndSettle();
     expect(viajesService.pagina, 2);
   });
@@ -143,6 +149,7 @@ class _ViajesServiceFake extends ViajesService {
   final int totalPaginas;
   int pagina = 1;
   String? folio;
+  String? estado;
 
   @override
   Future<PaginaViajes> obtenerHistorial({
@@ -155,6 +162,7 @@ class _ViajesServiceFake extends ViajesService {
   }) async {
     this.pagina = pagina;
     this.folio = folio;
+    this.estado = estado;
     return PaginaViajes(
       viajes: viajes,
       pagina: pagina,
