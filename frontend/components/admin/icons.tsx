@@ -13,7 +13,10 @@ export type IconName =
   | "menu"
   | "chevron"
   | "logout"
-  | "user";
+  | "user"
+  | "check"
+  | "cancel"
+  | "volume";
 
 const paths: Record<IconName, React.ReactNode> = {
   dashboard: <><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></>,
@@ -29,6 +32,9 @@ const paths: Record<IconName, React.ReactNode> = {
   chevron: <path d="m9 18 6-6-6-6"/>,
   logout: <><path d="M10 17l5-5-5-5M15 12H3"/><path d="M14 4h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-5"/></>,
   user: <><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></>,
+  check: <><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></>,
+  cancel: <><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/></>,
+  volume: <><path d="M7 3h10l2 6-7 12L5 9z"/><path d="M5 9h14M9 9l3 12 3-12"/></>,
 };
 
 export function Icon({ name, ...props }: { name: IconName } & SVGProps<SVGSVGElement>) {

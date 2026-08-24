@@ -14,6 +14,7 @@ import { UbicacionesModule } from './ubicaciones/ubicaciones.module';
 import { ViajesModule } from './viajes/viajes.module';
 import { AuditoriaModule } from './auditoria/auditoria.module';
 import { ReportesModule } from './reportes/reportes.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { ReportesModule } from './reportes/reportes.module';
     ViajesModule,
     AuditoriaModule,
     ReportesModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
