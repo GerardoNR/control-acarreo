@@ -50,3 +50,43 @@ export interface UbicacionPayload {
   descripcion?: string;
   referencia?: string;
 }
+
+export interface Camion extends CatalogBase {
+  placas: string;
+  numero_economico: string | null;
+  nfc_tag_uid: string;
+  capacidad_m3: string;
+  tipo_camion: string | null;
+  marca: string | null;
+  modelo: string | null;
+  anio: number | null;
+}
+
+export interface CamionPayload {
+  placas: string;
+  numero_economico?: string;
+  nfc_tag_uid: string;
+  capacidad_m3: number;
+  tipo_camion?: string;
+  marca?: string;
+  modelo?: string;
+  anio?: number;
+}
+
+export interface Chofer extends CatalogBase {
+  nombre: string;
+  apellido_paterno: string | null;
+  apellido_materno: string | null;
+  telefono: string | null;
+  licencia: string | null;
+  vigencia_licencia: string | null;
+}
+
+export interface ChoferPayload {
+  nombre: string;
+  apellido_paterno?: string;
+  apellido_materno?: string;
+  telefono?: string;
+  licencia?: string;
+  vigencia_licencia?: string;
+}
