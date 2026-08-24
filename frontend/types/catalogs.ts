@@ -90,3 +90,24 @@ export interface ChoferPayload {
   licencia?: string;
   vigencia_licencia?: string;
 }
+
+export interface Checador extends CatalogBase {
+  nombre: string;
+  telefono: string | null;
+  usuario: string;
+  ultimo_acceso: string | null;
+}
+
+export interface CreateChecadorPayload {
+  nombre: string;
+  telefono?: string;
+  usuario: string;
+  password: string;
+}
+
+export interface UpdateChecadorPayload {
+  nombre?: string;
+  telefono?: string;
+  usuario?: string;
+  password?: string;
+}
