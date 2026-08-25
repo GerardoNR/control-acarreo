@@ -1,4 +1,10 @@
-import { IsDateString, IsOptional, IsString, MinLength } from 'class-validator';
+import {
+  IsDateString,
+  IsOptional,
+  IsString,
+  Matches,
+  MinLength,
+} from 'class-validator';
 import { IsPersonaName } from '../../common/validation/persona-name.validation';
 import { Trim } from '../../common/validation/string.transforms';
 
@@ -28,6 +34,9 @@ export class UpdateChoferDto {
   @Trim()
   @IsString()
   @MinLength(1)
+  @Matches(/^\d{10}$/, {
+    message: 'telefono debe contener exactamente 10 dígitos',
+  })
   telefono?: string;
 
   @IsOptional()

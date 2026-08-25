@@ -42,8 +42,10 @@ export default function ChoferesPage() {
     const materno = form.apellido_materno.trim();
     if (nombre.length < 2) { setFormError("El nombre debe tener al menos 2 caracteres."); return; }
     if (![nombre, paterno, materno].filter(Boolean).every((value) => personaNamePattern.test(value))) { setFormError("Nombre y apellidos sólo pueden contener letras, espacios, apóstrofes y guiones."); return; }
+    const telefono = form.telefono.replace(/\D/g, '').slice(0, 10);
+    if (form.telefono.trim() && telefono.length !== 10) { setFormError("El teléfono debe contener exactamente 10 dígitos."); return; }
     const optional = (value: string) => value.trim() || undefined;
-    const payload: ChoferPayload = { nombre, apellido_paterno: optional(paterno), apellido_materno: optional(materno), telefono: optional(form.telefono), licencia: optional(form.licencia), vigencia_licencia: optional(form.vigencia_licencia) };
+    const payload: ChoferPayload = { nombre, apellido_paterno: optional(paterno), apellido_materno: optional(materno), telefono: telefono || undefined, licencia: optional(form.licencia), vigencia_licencia: optional(form.vigencia_licencia) };
     setSaving(true); setFormError("");
     try {
       const saved = editing ? await choferesService.update(editing.id, payload) : await choferesService.create(payload);
@@ -73,7 +75,7 @@ export default function ChoferesPage() {
     <CatalogDialog title={editing ? "Editar chofer" : "Nuevo chofer"} open={open} saving={saving} error={formError} onClose={() => setOpen(false)} onSubmit={() => void save()}>
       <FormField label="Nombre" required><input className={inputClassName} required minLength={2} value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} /></FormField>
       <div className="grid gap-4 sm:grid-cols-2"><FormField label="Apellido paterno"><input className={inputClassName} value={form.apellido_paterno} onChange={(e) => setForm({ ...form, apellido_paterno: e.target.value })} /></FormField><FormField label="Apellido materno"><input className={inputClassName} value={form.apellido_materno} onChange={(e) => setForm({ ...form, apellido_materno: e.target.value })} /></FormField></div>
-      <div className="grid gap-4 sm:grid-cols-2"><FormField label="Teléfono"><input className={inputClassName} type="tel" value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} /></FormField><FormField label="Licencia"><input className={inputClassName} value={form.licencia} onChange={(e) => setForm({ ...form, licencia: e.target.value })} /></FormField></div>
+      <div className="grid gap-4 sm:grid-cols-2"><FormField label="Teléfono"><input className={inputClassName} type="tel" inputMode="numeric" maxLength={10} autoComplete="tel" value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value.replace(/\D/g, '').slice(0, 10) })} aria-describedby="chofer-telefono-help" /><span id="chofer-telefono-help" className="mt-1 block text-xs text-[#64748B]">10 dígitos</span></FormField><FormField label="Licencia"><input className={inputClassName} value={form.licencia} onChange={(e) => setForm({ ...form, licencia: e.target.value })} /></FormField></div>
       <FormField label="Vigencia de licencia"><input className={inputClassName} type="date" value={form.vigencia_licencia} onChange={(e) => setForm({ ...form, vigencia_licencia: e.target.value })} /></FormField>
     </CatalogDialog>
   </section>;

@@ -24,8 +24,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
         if (!secret) {
           throw new Error('JWT_SECRET no está configurado');
         }
-        const expiresIn =
-          configService.get<string>('JWT_EXPIRES_IN') ?? '8h';
+        const expiresIn = configService.get<string>('JWT_EXPIRES_IN') ?? '8h';
         return {
           secret,
           signOptions: { expiresIn } as JwtModuleOptions['signOptions'],

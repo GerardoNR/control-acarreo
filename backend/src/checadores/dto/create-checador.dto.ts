@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MinLength } from 'class-validator';
+import { IsOptional, IsString, Matches, MinLength } from 'class-validator';
 import { IsPersonaName } from '../../common/validation/persona-name.validation';
 import {
   NormalizeUsuario,
@@ -16,6 +16,9 @@ export class CreateChecadorDto {
   @Trim()
   @IsString()
   @MinLength(1)
+  @Matches(/^\d{10}$/, {
+    message: 'telefono debe contener exactamente 10 dígitos',
+  })
   telefono?: string;
 
   @NormalizeUsuario()

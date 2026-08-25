@@ -71,7 +71,8 @@ export default function ChecadoresPage() {
     if (!editing && !changingPassword) { setFormError("La contraseña es obligatoria."); return; }
     if (changingPassword && form.password.length < 8) { setFormError("La contraseña debe tener al menos 8 caracteres."); return; }
     if (changingPassword && form.password !== form.passwordConfirmation) { setFormError("Las contraseñas no coinciden."); return; }
-    const telefono = form.telefono.trim() || undefined;
+    const telefono = form.telefono.replace(/\D/g, '').slice(0, 10);
+    if (form.telefono.trim() && telefono.length !== 10) { setFormError("El teléfono debe contener exactamente 10 dígitos."); return; }
     setSaving(true); setFormError("");
     try {
       let saved: Checador;
@@ -111,8 +112,8 @@ export default function ChecadoresPage() {
       </tbody></table></div>}
     </div>
     <CatalogDialog title={editing ? "Editar checador" : "Nuevo checador"} open={open} saving={saving} error={formError} onClose={closeDialog} onSubmit={() => void save()}>
-      <FormField label="Nombre" required><input className={inputClassName} required minLength={2} autoComplete="off" value={form.nombre} onChange={(event) => setForm({ ...form, nombre: event.target.value })} /></FormField>
-      <div className="grid gap-4 sm:grid-cols-2"><FormField label="Usuario" required><input className={inputClassName} required minLength={3} autoCapitalize="none" autoComplete="off" spellCheck={false} value={form.usuario} onChange={(event) => setForm({ ...form, usuario: event.target.value })} /></FormField><FormField label="Teléfono"><input className={inputClassName} type="tel" autoComplete="off" value={form.telefono} onChange={(event) => setForm({ ...form, telefono: event.target.value })} /></FormField></div>
+      <FormField label="Nombre" required><input className={inputClassName} required minLength={2} autoComplete="name" value={form.nombre} onChange={(event) => setForm({ ...form, nombre: event.target.value })} /></FormField>
+      <div className="grid gap-4 sm:grid-cols-2"><FormField label="Usuario" required><input className={inputClassName} required minLength={3} autoCapitalize="none" autoComplete="username" spellCheck={false} value={form.usuario} onChange={(event) => setForm({ ...form, usuario: event.target.value })} /></FormField><FormField label="Teléfono"><input className={inputClassName} type="tel" inputMode="numeric" maxLength={10} autoComplete="tel" value={form.telefono} onChange={(event) => setForm({ ...form, telefono: event.target.value.replace(/\D/g, '').slice(0, 10) })} aria-describedby="checador-telefono-help" /><span id="checador-telefono-help" className="mt-1 block text-xs text-[#64748B]">10 dígitos</span></FormField></div>
       <div className="rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] p-4">
         <div className="mb-3"><p className="text-sm font-semibold text-[#0F172A]">{editing ? "Cambiar contraseña" : "Contraseña de acceso"}</p>{editing ? <p className="mt-1 text-xs text-[#475569]">Déjala vacía para conservar la contraseña actual.</p> : null}</div>
         <div className="grid gap-4 sm:grid-cols-2"><FormField label={editing ? "Nueva contraseña" : "Contraseña"} required={!editing}><input className={inputClassName} type={showPassword ? "text" : "password"} required={!editing} minLength={8} autoComplete="new-password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} /></FormField><FormField label="Confirmar contraseña" required={!editing}><input className={inputClassName} type={showPassword ? "text" : "password"} required={!editing} minLength={form.password ? 8 : undefined} autoComplete="new-password" value={form.passwordConfirmation} onChange={(event) => setForm({ ...form, passwordConfirmation: event.target.value })} /></FormField></div>

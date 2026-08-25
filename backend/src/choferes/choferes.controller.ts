@@ -41,10 +41,7 @@ export class ChoferesController {
   }
 
   @Patch(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateChoferDto,
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateChoferDto) {
     return this.choferesService.update(id, dto);
   }
 

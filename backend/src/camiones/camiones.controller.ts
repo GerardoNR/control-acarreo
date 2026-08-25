@@ -47,10 +47,7 @@ export class CamionesController {
   }
 
   @Patch(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateCamionDto,
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCamionDto) {
     return this.camionesService.update(id, dto);
   }
 
