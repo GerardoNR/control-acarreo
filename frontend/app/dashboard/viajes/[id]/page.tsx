@@ -126,6 +126,6 @@ export default function ViajeDetailPage() {
   </section>;
 }
 
-function DetailHeader() { return <div><Link href="/dashboard/viajes" className="text-sm font-semibold text-[#2563EB] hover:text-[#1D4ED8]">← Volver a viajes</Link><h1 className="mt-3 text-3xl font-semibold tracking-tight text-[#0F172A]">Detalle del viaje</h1><p className="mt-2 text-sm text-[#475569]">Información operativa y trazabilidad registrada.</p></div>; }
+function DetailHeader() { return <div><Link href="/dashboard/viajes" className="text-sm font-semibold text-[#2563EB] hover:text-[#1D4ED8]">← Volver a viajes</Link><p className="mt-3 text-sm text-[#475569]">Información operativa y trazabilidad registrada.</p></div>; }
 function DetailCard({ title, children }: { title: string; children: React.ReactNode }) { return <section className="rounded-xl border border-[#CBD5E1] bg-white"><h3 className="border-b border-[#E2E8F0] px-5 py-3 text-sm font-semibold text-[#0F172A]">{title}</h3><dl className="divide-y divide-[#F1F5F9] px-5">{children}</dl></section>; }
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) { return <div className="grid gap-1 py-3 sm:grid-cols-[150px_1fr]"><dt className="text-xs font-medium text-[#64748B]">{label}</dt><dd className="text-sm text-[#0F172A]">{value}</dd></div>; }

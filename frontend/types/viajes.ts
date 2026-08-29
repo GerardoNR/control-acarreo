@@ -10,6 +10,7 @@ export interface Viaje {
   id_legacy: number | null;
   folio: string;
   proyecto: ViajeCatalogo;
+  orden_acarreo: { id: number; folio: string } | null;
   material: ViajeCatalogo & { unidad_medida: string };
   camion: { id: number; placas: string; numero_economico: string | null; nfc_tag_uid: string };
   chofer: ViajeCatalogo & { apellido_paterno: string | null; apellido_materno: string | null };
