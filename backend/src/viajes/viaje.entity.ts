@@ -6,6 +6,8 @@ import {
   Index,
   JoinColumn,
   ManyToOne,
+  OneToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -17,6 +19,12 @@ import { Material } from '../materiales/material.entity';
 import { Proyecto } from '../proyectos/proyecto.entity';
 import { Ubicacion } from '../ubicaciones/ubicacion.entity';
 import { EstadoViaje } from './enums/estado-viaje.enum';
+import { OrdenAcarreo } from '../ordenes-acarreo/orden-acarreo.entity';
+import { RutaAcarreo } from '../rutas-acarreo/ruta-acarreo.entity';
+import { Tarifa } from '../tarifas/tarifa.entity';
+import { Ticket } from '../tickets/ticket.entity';
+import { UnidadControl } from '../unidades-control/unidad-control.entity';
+import { IncidenciaViaje } from '../incidencias-viaje/incidencia-viaje.entity';
 
 @Index('IDX_viajes_camion_estado', ['camion', 'estado'])
 @Index('IDX_viajes_proyecto', ['proyecto'])
@@ -51,9 +59,21 @@ export class Viaje {
   @Column({ type: 'varchar', length: 19, unique: true })
   folio: string;
 
+  @Index('IDX_viajes_folio_origen')
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  folio_origen: string | null;
+
+  @Index('IDX_viajes_folio_destino')
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  folio_destino: string | null;
+
   @ManyToOne(() => Proyecto, { nullable: false })
   @JoinColumn({ name: 'proyecto_id' })
   proyecto: Proyecto;
+
+  @ManyToOne(() => OrdenAcarreo, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'orden_acarreo_id' })
+  orden_acarreo: OrdenAcarreo | null;
 
   @ManyToOne(() => Camion, { nullable: false })
   @JoinColumn({ name: 'camion_id' })
@@ -67,6 +87,10 @@ export class Viaje {
   @JoinColumn({ name: 'material_id' })
   material: Material;
 
+  @ManyToOne(() => Material, { nullable: true, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'material_llegada_id' })
+  material_llegada: Material | null;
+
   @ManyToOne(() => Ubicacion, { nullable: false })
   @JoinColumn({ name: 'ubicacion_origen_id' })
   ubicacion_origen: Ubicacion;
@@ -74,6 +98,28 @@ export class Viaje {
   @ManyToOne(() => Ubicacion, { nullable: false })
   @JoinColumn({ name: 'ubicacion_destino_id' })
   ubicacion_destino: Ubicacion;
+
+  @ManyToOne(() => Ubicacion, { nullable: true, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'ubicacion_destino_real_id' })
+  ubicacion_destino_real: Ubicacion | null;
+
+  @ManyToOne(() => RutaAcarreo, { nullable: true, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'ruta_acarreo_id' })
+  ruta_acarreo: RutaAcarreo | null;
+
+  @ManyToOne(() => UnidadControl, { nullable: true, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'unidad_control_id' })
+  unidad_control: UnidadControl | null;
+
+  @ManyToOne(() => Tarifa, { nullable: true, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'tarifa_aplicada_id' })
+  tarifa_aplicada: Tarifa | null;
+
+  @OneToOne(() => Ticket, (ticket) => ticket.viaje)
+  ticket: Ticket | null;
+
+  @OneToMany(() => IncidenciaViaje, (incidencia) => incidencia.viaje)
+  incidencias: IncidenciaViaje[];
 
   @ManyToOne(() => Checador, { nullable: false, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'checador_salida_id' })
@@ -133,6 +179,69 @@ export class Viaje {
 
   @Column({ type: 'text', nullable: true })
   motivo_cancelacion: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  proyecto_nombre_snapshot: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  placas_snapshot: string | null;
+
+  @Column({ type: 'numeric', precision: 10, scale: 3, nullable: true })
+  capacidad_aplicada_m3: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  origen_nombre_snapshot: string | null;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  origen_tipo_snapshot: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  destino_nombre_snapshot: string | null;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  destino_tipo_snapshot: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  material_origen_nombre_snapshot: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  material_destino_nombre_snapshot: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  ruta_descripcion_snapshot: string | null;
+
+  @Column({ type: 'numeric', precision: 10, scale: 3, nullable: true })
+  distancia_pavimento_aplicada: string | null;
+
+  @Column({ type: 'numeric', precision: 10, scale: 3, nullable: true })
+  distancia_total_aplicada: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  unidad_control_nombre_snapshot: string | null;
+
+  @Column({ type: 'varchar', length: 40, nullable: true })
+  tipo_tarifa_aplicada: string | null;
+
+  @Column({ type: 'numeric', precision: 12, scale: 4, nullable: true })
+  precio_unitario_aplicado: string | null;
+
+  @Column({ type: 'numeric', precision: 12, scale: 4, nullable: true })
+  precio_primer_km_aplicado: string | null;
+
+  @Column({ type: 'numeric', precision: 12, scale: 4, nullable: true })
+  precio_km_subsecuente_aplicado: string | null;
+
+  @Column({ type: 'numeric', precision: 14, scale: 2, nullable: true })
+  m3_km: string | null;
+
+  @Column({ type: 'numeric', precision: 14, scale: 2, nullable: true })
+  coste_primer_km: string | null;
+
+  @Column({ type: 'numeric', precision: 14, scale: 2, nullable: true })
+  coste_km_subsecuente: string | null;
+
+  @Column({ type: 'numeric', precision: 14, scale: 2, nullable: true })
+  importe_acarreo: string | null;
 
   // Campos del modelo anterior conservados por compatibilidad e historial.
   @Column({ type: 'numeric', precision: 10, scale: 2, nullable: true })

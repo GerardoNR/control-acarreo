@@ -12,6 +12,7 @@ import { Proyecto } from '../proyectos/proyecto.entity';
 export enum TipoUbicacion {
   BANCO = 'banco',
   FRENTE = 'frente',
+  TRAZA = 'traza',
 }
 
 @Entity({ name: 'ubicaciones' })
@@ -37,6 +38,12 @@ export class Ubicacion {
 
   @Column({ type: 'boolean', default: true })
   activo: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  deleted_at: Date | null;
+
+  @Column({ type: 'boolean', nullable: true })
+  activo_antes_papelera: boolean | null;
 
   @CreateDateColumn({ type: 'timestamp' })
   creado_en: Date;

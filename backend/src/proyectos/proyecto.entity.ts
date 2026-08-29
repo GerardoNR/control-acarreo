@@ -29,6 +29,15 @@ export class Proyecto {
   @Column({ type: 'boolean', default: true })
   activo: boolean;
 
+  @Column({ type: 'timestamp', nullable: true })
+  finalizado_at: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  deleted_at: Date | null;
+
+  @Column({ type: 'boolean', nullable: true })
+  activo_antes_papelera: boolean | null;
+
   @CreateDateColumn({ type: 'timestamp' })
   creado_en: Date;
 

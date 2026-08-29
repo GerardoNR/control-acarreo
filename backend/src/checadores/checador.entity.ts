@@ -27,6 +27,12 @@ export class Checador {
   activo: boolean;
 
   @Column({ type: 'timestamp', nullable: true })
+  deleted_at: Date | null;
+
+  @Column({ type: 'boolean', nullable: true })
+  activo_antes_papelera: boolean | null;
+
+  @Column({ type: 'timestamp', nullable: true })
   ultimo_acceso: Date | null;
 
   @CreateDateColumn({ type: 'timestamp' })

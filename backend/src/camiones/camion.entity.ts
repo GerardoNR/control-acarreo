@@ -19,6 +19,9 @@ export class Camion {
   @Column({ type: 'varchar', nullable: true, unique: true })
   numero_economico: string | null;
 
+  @Column({ type: 'char', length: 5, nullable: true, unique: true })
+  codigo_ticket_unidad: string | null;
+
   @Index('IDX_camiones_nfc_tag_uid')
   @Column({ type: 'varchar', unique: true })
   nfc_tag_uid: string;
@@ -40,6 +43,12 @@ export class Camion {
 
   @Column({ type: 'boolean', default: true })
   activo: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  deleted_at: Date | null;
+
+  @Column({ type: 'boolean', nullable: true })
+  activo_antes_papelera: boolean | null;
 
   @CreateDateColumn({ type: 'timestamp' })
   creado_en: Date;
