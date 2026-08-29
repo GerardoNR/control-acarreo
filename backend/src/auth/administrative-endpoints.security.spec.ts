@@ -18,6 +18,8 @@ import { ChoferesController } from '../choferes/choferes.controller';
 import { ChoferesService } from '../choferes/choferes.service';
 import { MaterialesController } from '../materiales/materiales.controller';
 import { MaterialesService } from '../materiales/materiales.service';
+import { PapeleraService } from '../papelera/papelera.service';
+import { PapeleraController } from '../papelera/papelera.controller';
 import { ProyectosController } from '../proyectos/proyectos.controller';
 import { ProyectosService } from '../proyectos/proyectos.service';
 import { UbicacionesController } from '../ubicaciones/ubicaciones.controller';
@@ -57,6 +59,11 @@ const servicio = {
   create: jest.fn().mockReturnValue(respuesta),
   update: jest.fn().mockReturnValue(respuesta),
   cambiarEstado: jest.fn().mockReturnValue(respuesta),
+  enviar: jest.fn().mockReturnValue(respuesta),
+  listar: jest.fn().mockReturnValue(respuesta),
+  restaurar: jest.fn().mockReturnValue(respuesta),
+  eliminarDefinitivamente: jest.fn().mockReturnValue(respuesta),
+  finalizar: jest.fn().mockReturnValue(respuesta),
 };
 
 describe('Seguridad de endpoints administrativos', () => {
@@ -72,6 +79,7 @@ describe('Seguridad de endpoints administrativos', () => {
         UbicacionesController,
         ChecadoresController,
         AdministradoresController,
+        PapeleraController,
       ],
       providers: [
         { provide: ProyectosService, useValue: servicio },
@@ -81,6 +89,7 @@ describe('Seguridad de endpoints administrativos', () => {
         { provide: UbicacionesService, useValue: servicio },
         { provide: ChecadoresService, useValue: servicio },
         { provide: AdministradoresService, useValue: servicio },
+        { provide: PapeleraService, useValue: servicio },
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -156,4 +165,42 @@ describe('Seguridad de endpoints administrativos', () => {
         .set('Authorization', `Bearer ${Role.ADMINISTRADOR}`)
         .expect(200, respuesta));
   });
+
+  describe.each([
+    'checadores',
+    'choferes',
+    'camiones',
+    'materiales',
+    'ubicaciones',
+  ])('Papelera desde %s', (ruta) => {
+    it('DELETE responde 403 a CHECADOR', () =>
+      request(app.getHttpServer())
+        .delete(`/api/${ruta}/1`)
+        .set('Authorization', `Bearer ${Role.CHECADOR}`)
+        .expect(403));
+
+    it('DELETE permite a ADMINISTRADOR', () =>
+      request(app.getHttpServer())
+        .delete(`/api/${ruta}/1`)
+        .set('Authorization', `Bearer ${Role.ADMINISTRADOR}`)
+        .expect(200, respuesta));
+  });
+
+  it('GET /api/papelera responde 403 a CHECADOR', () =>
+    request(app.getHttpServer())
+      .get('/api/papelera')
+      .set('Authorization', `Bearer ${Role.CHECADOR}`)
+      .expect(403));
+
+  it('GET /api/papelera permite a ADMINISTRADOR', () =>
+    request(app.getHttpServer())
+      .get('/api/papelera')
+      .set('Authorization', `Bearer ${Role.ADMINISTRADOR}`)
+      .expect(200, respuesta));
+
+  it('PATCH /api/proyectos/:id/finalizar permite a ADMINISTRADOR', () =>
+    request(app.getHttpServer())
+      .patch('/api/proyectos/1/finalizar')
+      .set('Authorization', `Bearer ${Role.ADMINISTRADOR}`)
+      .expect(200, respuesta));
 });

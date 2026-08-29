@@ -47,6 +47,13 @@ describe('DashboardController', () => {
     completados_hoy: 1,
     cancelados_hoy: 0,
     volumen_transportado: [{ unidad_medida: 'm3', cantidad: 14.5 }],
+    actividad_ultimos_7_dias: [],
+    volumen_ultimos_7_dias: [],
+    operacion_actual: {
+      viajes_en_transito: 1,
+      camiones_operando: 1,
+      proyectos_activos: 1,
+    },
   };
   let app: INestApplication<App>;
 
