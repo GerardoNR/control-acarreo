@@ -1,4 +1,8 @@
 import { EstadoViaje } from '../enums/estado-viaje.enum';
+import {
+  OrigenIncidenciaViaje,
+  TipoIncidenciaViaje,
+} from '../../incidencias-viaje/incidencia-viaje.entity';
 
 interface CatalogoResponse {
   id: number;
@@ -9,7 +13,15 @@ export interface ViajeResponse {
   id: string;
   id_legacy: number | null;
   folio: string;
+  folio_origen: string | null;
+  folio_destino: string | null;
+  ticket: {
+    id: string;
+    codigo_ticket: string;
+    fecha_generacion: Date;
+  } | null;
   proyecto: CatalogoResponse;
+  orden_acarreo: { id: number; folio: string } | null;
   material: CatalogoResponse & { unidad_medida: string };
   camion: {
     id: number;
@@ -23,6 +35,33 @@ export interface ViajeResponse {
   };
   ubicacion_origen: CatalogoResponse & { tipo: string };
   ubicacion_destino: CatalogoResponse & { tipo: string };
+  ubicacion_destino_real: (CatalogoResponse & { tipo: string }) | null;
+  material_llegada: CatalogoResponse | null;
+  ruta_acarreo: {
+    id: number;
+    clave: string;
+    descripcion: string | null;
+  } | null;
+  unidad_control: CatalogoResponse | null;
+  unidad_control_sugerida: CatalogoResponse | null;
+  calculo_economico: {
+    capacidad_m3: string;
+    distancia_pavimento_km: string;
+    distancia_total_km: string;
+    m3_km: string;
+    coste_primer_km: string;
+    coste_km_subsecuente: string;
+    importe: string;
+  } | null;
+  incidencias: Array<{
+    id: string;
+    tipo: TipoIncidenciaViaje;
+    origen: OrigenIncidenciaViaje;
+    mensaje: string;
+    datos: Record<string, unknown> | null;
+    activa: boolean;
+    detectada_en: Date;
+  }>;
   checador_salida: CatalogoResponse;
   checador_llegada: CatalogoResponse | null;
   administrador_cancelacion: CatalogoResponse | null;

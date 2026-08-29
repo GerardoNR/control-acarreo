@@ -17,6 +17,9 @@ import { TipoUbicacion, Ubicacion } from '../ubicaciones/ubicacion.entity';
 import { EstadoViaje } from './enums/estado-viaje.enum';
 import { Viaje } from './viaje.entity';
 import { ViajesService } from './viajes.service';
+import { SuspensionesService } from '../suspensiones/suspensiones.service';
+import { TicketsService } from '../tickets/tickets.service';
+import { IncidenciasViajeService } from '../incidencias-viaje/incidencias-viaje.service';
 
 describe('ViajesService - cancelar', () => {
   const id = '9f7538fb-d306-42f7-a010-8865668c57b8';
@@ -114,7 +117,12 @@ describe('ViajesService - cancelar', () => {
         callback(manager as unknown as EntityManager),
       ),
     };
-    service = new ViajesService(dataSource as unknown as DataSource);
+    service = new ViajesService(
+      dataSource as unknown as DataSource,
+      {} as SuspensionesService,
+      {} as TicketsService,
+      {} as IncidenciasViajeService,
+    );
   });
 
   it('cancela el viaje, conserva la salida y devuelve una respuesta segura', async () => {

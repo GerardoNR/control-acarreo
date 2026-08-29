@@ -7,18 +7,26 @@ import {
   IsPositive,
   IsString,
   Max,
+  MaxLength,
 } from 'class-validator';
 
 const MAX_NUMERIC_12_3 = 999_999_999.999;
 
 export class RegistrarSalidaViajeDto {
+  @IsOptional()
   @IsInt()
   @IsPositive()
-  proyecto_id: number;
+  orden_acarreo_id?: number;
 
+  @IsOptional()
   @IsInt()
   @IsPositive()
-  material_id: number;
+  proyecto_id?: number;
+
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  material_id?: number;
 
   @IsInt()
   @IsPositive()
@@ -28,13 +36,24 @@ export class RegistrarSalidaViajeDto {
   @IsPositive()
   chofer_id: number;
 
+  @IsOptional()
   @IsInt()
   @IsPositive()
-  ubicacion_origen_id: number;
+  ubicacion_origen_id?: number;
 
+  @IsOptional()
   @IsInt()
   @IsPositive()
-  ubicacion_destino_id: number;
+  ubicacion_destino_id?: number;
+
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(64)
+  folio_origen?: string;
 
   @IsNumber({
     allowInfinity: false,

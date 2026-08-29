@@ -1,5 +1,6 @@
 import { Transform, Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -14,6 +15,13 @@ import {
 import { EstadoViaje } from '../enums/estado-viaje.enum';
 
 export class ConsultarViajesDto {
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    value === true || value === 'true' ? true : value === false || value === 'false' ? false : value,
+  )
+  @IsBoolean()
+  todos?: boolean;
+
   @IsOptional()
   @IsEnum(EstadoViaje)
   estado?: EstadoViaje;

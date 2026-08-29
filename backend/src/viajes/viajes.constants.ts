@@ -1,4 +1,6 @@
-export const ZONA_HORARIA_OPERATIVA = 'America/Monterrey';
+import { ZONA_HORARIA_OPERATIVA } from '../common/operational-datetime';
+
+export { ZONA_HORARIA_OPERATIVA };
 export const INDICE_CAMION_EN_TRANSITO = 'UQ_viajes_camion_en_transito';
 export const SECUENCIA_FOLIO_VIAJES = 'viajes_folio_seq';
 

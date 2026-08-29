@@ -10,6 +10,13 @@ import { TipoUbicacion, Ubicacion } from '../ubicaciones/ubicacion.entity';
 import { EstadoViaje } from './enums/estado-viaje.enum';
 import { Viaje } from './viaje.entity';
 import { ViajesService } from './viajes.service';
+import { SuspensionesService } from '../suspensiones/suspensiones.service';
+import { TicketsService } from '../tickets/tickets.service';
+import { IncidenciasViajeService } from '../incidencias-viaje/incidencias-viaje.service';
+import {
+  OrigenIncidenciaViaje,
+  TipoIncidenciaViaje,
+} from '../incidencias-viaje/incidencia-viaje.entity';
 
 describe('ViajesService - consultas', () => {
   let service: ViajesService;
@@ -89,6 +96,17 @@ describe('ViajesService - consultas', () => {
       motivo_cancelacion: null,
       creado_en: new Date('2026-08-12T18:00:00.000Z'),
       actualizado_en: new Date('2026-08-12T18:00:00.000Z'),
+      incidencias: [
+        {
+          id: '1',
+          tipo: TipoIncidenciaViaje.MISMO_CHECADOR,
+          origen: OrigenIncidenciaViaje.AUTOMATICA,
+          mensaje: 'El mismo checador registró ambos eventos',
+          datos: { checador_id: 7 },
+          activa: true,
+          detectada_en: new Date('2026-08-12T18:30:00.000Z'),
+        },
+      ],
     } as Viaje;
     viajesRepository = {
       findAndCount: jest
@@ -106,7 +124,12 @@ describe('ViajesService - consultas', () => {
         entity === Viaje ? viajesRepository : camionesRepository,
       ),
     };
-    service = new ViajesService(dataSource as unknown as DataSource);
+    service = new ViajesService(
+      dataSource as unknown as DataSource,
+      {} as SuspensionesService,
+      {} as TicketsService,
+      {} as IncidenciasViajeService,
+    );
   });
 
   it('1, 8-10. pagina, ordena y calcula metadatos', async () => {
@@ -234,6 +257,23 @@ describe('ViajesService - consultas', () => {
     );
     expect(JSON.stringify(resultado)).not.toContain('password_hash');
     expect(JSON.stringify(resultado)).not.toContain('secreto-usuario');
+  });
+
+  it('expone incidencias activas sin filtrar entidades completas', async () => {
+    const resultado = await service.consultarPorId(viaje.id);
+    expect(resultado.incidencias).toEqual([
+      expect.objectContaining({
+        id: '1',
+        tipo: TipoIncidenciaViaje.MISMO_CHECADOR,
+        origen: OrigenIncidenciaViaje.AUTOMATICA,
+        activa: true,
+      }),
+    ]);
+    expect(viajesRepository.findOne).toHaveBeenCalledWith(
+      expect.objectContaining({
+        relations: expect.objectContaining({ incidencias: true }),
+      }),
+    );
   });
 
   it('12-13. consulta viaje existente y responde 404 si no existe', async () => {

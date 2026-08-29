@@ -1,5 +1,5 @@
 import {
-  ConflictException,
+  BadRequestException,
   ForbiddenException,
   NotFoundException,
   UnauthorizedException,
@@ -17,6 +17,10 @@ import { TipoUbicacion, Ubicacion } from '../ubicaciones/ubicacion.entity';
 import { EstadoViaje } from './enums/estado-viaje.enum';
 import { Viaje } from './viaje.entity';
 import { ViajesService } from './viajes.service';
+import { TipoIncidenciaViaje } from '../incidencias-viaje/incidencia-viaje.entity';
+import { SuspensionesService } from '../suspensiones/suspensiones.service';
+import { TicketsService } from '../tickets/tickets.service';
+import { UnidadControl } from '../unidades-control/unidad-control.entity';
 
 describe('ViajesService - registrar llegada', () => {
   const id = '9f7538fb-d306-42f7-a010-8865668c57b8';
@@ -36,6 +40,8 @@ describe('ViajesService - registrar llegada', () => {
     save: jest.Mock;
   };
   let dataSource: { transaction: jest.Mock };
+  let registrarIncidencias: jest.Mock;
+  let incidenciasRegistradas: Array<{ tipo: TipoIncidenciaViaje }>;
 
   beforeEach(() => {
     const checadorSalida = {
@@ -59,6 +65,7 @@ describe('ViajesService - registrar llegada', () => {
         id: 2,
         nombre: 'Material',
         unidad_medida: 'm3',
+        activo: true,
       } as Material,
       camion: {
         id: 3,
@@ -81,6 +88,8 @@ describe('ViajesService - registrar llegada', () => {
         id: 8,
         nombre: 'Frente',
         tipo: TipoUbicacion.FRENTE,
+        activo: true,
+        proyecto: { id: 1 } as Proyecto,
       } as Ubicacion,
       checador_salida: checadorSalida,
       checador_llegada: null,
@@ -95,6 +104,8 @@ describe('ViajesService - registrar llegada', () => {
       observaciones_salida: 'Salida original',
       observaciones_llegada: null,
       motivo_cancelacion: null,
+      unidad_control: null,
+      unidad_control_nombre_snapshot: null,
       creado_en: new Date('2026-08-12T18:00:00.000Z'),
       actualizado_en: new Date('2026-08-12T18:00:00.000Z'),
     } as Viaje;
@@ -115,7 +126,25 @@ describe('ViajesService - registrar llegada', () => {
         callback(manager as unknown as EntityManager),
       ),
     };
-    service = new ViajesService(dataSource as unknown as DataSource);
+    incidenciasRegistradas = [];
+    registrarIncidencias = jest.fn(
+      (
+        _manager: EntityManager,
+        _viaje: Viaje,
+        incidencias: Array<{ tipo: TipoIncidenciaViaje }>,
+      ) => {
+        incidenciasRegistradas = incidencias;
+        return Promise.resolve();
+      },
+    );
+    service = new ViajesService(
+      dataSource as unknown as DataSource,
+      { validarDisponible: jest.fn() } as unknown as SuspensionesService,
+      {} as TicketsService,
+      {
+        registrarAutomaticas: registrarIncidencias,
+      },
+    );
   });
 
   it('registra la llegada, completa el viaje y conserva sus datos originales', async () => {
@@ -143,6 +172,8 @@ describe('ViajesService - registrar llegada', () => {
         folio: 'VIA-20260812-000001',
         cantidad_llegada: '14.5',
         checador_llegada: checadorLlegada,
+        ubicacion_destino_real: viaje?.ubicacion_destino,
+        material_llegada: viaje?.material,
         observaciones_llegada: 'Descarga recibida correctamente',
         estado: EstadoViaje.COMPLETADO,
       }),
@@ -163,12 +194,149 @@ describe('ViajesService - registrar llegada', () => {
     expect(manager.save).not.toHaveBeenCalled();
   });
 
-  it('responde 409 cuando el viaje ya no está en tránsito', async () => {
+  it('es idempotente cuando el viaje ya fue completado', async () => {
     if (!viaje) throw new Error('Viaje de prueba no inicializado');
     viaje.estado = EstadoViaje.COMPLETADO;
     await expect(
       service.registrarLlegada(id, { cantidad_llegada: 14.5 }, usuario),
-    ).rejects.toBeInstanceOf(ConflictException);
+    ).resolves.toMatchObject({ id, estado: EstadoViaje.COMPLETADO });
+    expect(manager.save).not.toHaveBeenCalled();
+    expect(registrarIncidencias).not.toHaveBeenCalled();
+  });
+
+  it('registra incidencias por destino, material y checador diferentes', async () => {
+    if (!viaje || !checadorLlegada) throw new Error('Prueba no inicializada');
+    viaje.checador_salida = checadorLlegada;
+    const destinoReal = {
+      id: 9,
+      nombre: 'Otra traza',
+      tipo: TipoUbicacion.TRAZA,
+      activo: true,
+      proyecto: viaje.proyecto,
+    } as Ubicacion;
+    const materialReal = {
+      id: 10,
+      nombre: 'Material recibido',
+      activo: true,
+    } as Material;
+    manager.findOne.mockImplementation(
+      (entity: unknown, options: { where: { id?: string | number } }) => {
+        if (entity === Viaje) return Promise.resolve(viaje);
+        if (entity === Ubicacion && options.where.id === destinoReal.id)
+          return Promise.resolve(destinoReal);
+        return Promise.resolve(null);
+      },
+    );
+    manager.findOneBy.mockImplementation((entity: unknown) =>
+      Promise.resolve(entity === Material ? materialReal : checadorLlegada),
+    );
+
+    await service.registrarLlegada(
+      id,
+      {
+        ubicacion_destino_real_id: destinoReal.id,
+        material_llegada_id: materialReal.id,
+        folio_destino: '260827237520805565025',
+      },
+      usuario,
+    );
+
+    expect(incidenciasRegistradas.map(({ tipo }) => tipo)).toEqual([
+      TipoIncidenciaViaje.DESTINO_DIFERENTE,
+      TipoIncidenciaViaje.MATERIAL_DESTINO_DIFERENTE,
+      TipoIncidenciaViaje.MISMO_CHECADOR,
+    ]);
+    expect(viaje.folio_destino).toBe('260827237520805565025');
+  });
+
+  it('confirma la Unidad sugerida y congela su nombre al llegar', async () => {
+    if (!viaje) throw new Error('Viaje de prueba no inicializado');
+    const unidad = {
+      id: 20,
+      nombre: 'Unidad sugerida',
+      activo: true,
+      proyecto: viaje.proyecto,
+    } as UnidadControl;
+    viaje.unidad_control = unidad;
+    manager.findOne.mockImplementation((entity: unknown) =>
+      Promise.resolve(entity === UnidadControl ? unidad : viaje),
+    );
+
+    await service.registrarLlegada(
+      id,
+      { unidad_control_id: unidad.id },
+      usuario,
+    );
+
+    expect(viaje.unidad_control).toBe(unidad);
+    expect(viaje.unidad_control_nombre_snapshot).toBe('Unidad sugerida');
+  });
+
+  it('permite seleccionar una Unidad distinta de la sugerida', async () => {
+    if (!viaje) throw new Error('Viaje de prueba no inicializado');
+    const unidad = {
+      id: 21,
+      nombre: 'Unidad realmente utilizada',
+      activo: true,
+      proyecto: viaje.proyecto,
+    } as UnidadControl;
+    manager.findOne.mockImplementation((entity: unknown) =>
+      Promise.resolve(entity === UnidadControl ? unidad : viaje),
+    );
+
+    await service.registrarLlegada(
+      id,
+      { unidad_control_id: unidad.id },
+      usuario,
+    );
+
+    expect(viaje.unidad_control).toBe(unidad);
+    expect(viaje.unidad_control_nombre_snapshot).toBe(
+      'Unidad realmente utilizada',
+    );
+  });
+
+  it('rechaza una Unidad perteneciente a otro proyecto', async () => {
+    if (!viaje) throw new Error('Viaje de prueba no inicializado');
+    const unidad = {
+      id: 22,
+      nombre: 'Unidad ajena',
+      activo: true,
+      proyecto: { id: 999 } as Proyecto,
+    } as UnidadControl;
+    manager.findOne.mockImplementation((entity: unknown) =>
+      Promise.resolve(entity === UnidadControl ? unidad : viaje),
+    );
+
+    await expect(
+      service.registrarLlegada(
+        id,
+        { unidad_control_id: unidad.id },
+        usuario,
+      ),
+    ).rejects.toThrow('La unidad de control debe pertenecer al proyecto');
+    expect(manager.save).not.toHaveBeenCalled();
+  });
+
+  it('rechaza una Unidad retirada', async () => {
+    if (!viaje) throw new Error('Viaje de prueba no inicializado');
+    const unidad = {
+      id: 23,
+      nombre: 'Unidad retirada',
+      activo: false,
+      proyecto: viaje.proyecto,
+    } as UnidadControl;
+    manager.findOne.mockImplementation((entity: unknown) =>
+      Promise.resolve(entity === UnidadControl ? unidad : viaje),
+    );
+
+    await expect(
+      service.registrarLlegada(
+        id,
+        { unidad_control_id: unidad.id },
+        usuario,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
     expect(manager.save).not.toHaveBeenCalled();
   });
 

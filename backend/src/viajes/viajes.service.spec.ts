@@ -18,6 +18,18 @@ import { RegistrarSalidaViajeDto } from './dto/registrar-salida-viaje.dto';
 import { EstadoViaje } from './enums/estado-viaje.enum';
 import { Viaje } from './viaje.entity';
 import { ViajesService } from './viajes.service';
+import { SuspensionesService } from '../suspensiones/suspensiones.service';
+import { TipoEntidadSuspension } from '../suspensiones/suspension.entity';
+import { TicketsService } from '../tickets/tickets.service';
+import { Ticket } from '../tickets/ticket.entity';
+import {
+  EstadoOrdenAcarreo,
+  OrdenAcarreo,
+} from '../ordenes-acarreo/orden-acarreo.entity';
+import { RutaAcarreo } from '../rutas-acarreo/ruta-acarreo.entity';
+import { Tarifa, TipoCobroTarifa } from '../tarifas/tarifa.entity';
+import { UnidadControl } from '../unidades-control/unidad-control.entity';
+import { TipoIncidenciaViaje } from '../incidencias-viaje/incidencia-viaje.entity';
 
 describe('ViajesService - registrar salida', () => {
   let service: ViajesService;
@@ -27,8 +39,14 @@ describe('ViajesService - registrar salida', () => {
     query: jest.Mock;
     create: jest.Mock;
     save: jest.Mock;
+    findOneOrFail: jest.Mock;
+    createQueryBuilder: jest.Mock;
   };
   let dataSource: { transaction: jest.Mock };
+  let validarDisponible: jest.Mock;
+  let crearTicket: jest.Mock;
+  let registrarIncidencias: jest.Mock;
+  let viajeGuardado: Viaje | null;
 
   let proyecto: Proyecto;
   let material: Material;
@@ -71,6 +89,7 @@ describe('ViajesService - registrar salida', () => {
       numero_economico: 'ECO-001',
       nfc_tag_uid: '04:A8:35:7B:92:61:80',
       capacidad_m3: '20.00',
+      codigo_ticket_unidad: '23714',
     } as Camion;
     chofer = {
       id: 4,
@@ -78,6 +97,8 @@ describe('ViajesService - registrar salida', () => {
       apellido_paterno: 'Pérez',
       apellido_materno: null,
       activo: true,
+      vigencia_licencia: '2999-12-31',
+      deleted_at: null,
     } as Chofer;
     origen = {
       id: 5,
@@ -100,6 +121,14 @@ describe('ViajesService - registrar salida', () => {
       usuario: 'checador1',
     } as Checador;
     viajeActivo = null;
+    viajeGuardado = null;
+
+    const queryBuilder = {
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+    };
 
     manager = {
       findOneBy: jest.fn((entity: unknown) => {
@@ -123,19 +152,40 @@ describe('ViajesService - registrar salida', () => {
       ),
       query: jest.fn().mockResolvedValue([{ consecutivo: '42' }]),
       create: jest.fn((_entity: unknown, datos: Partial<Viaje>) => datos),
-      save: jest.fn((_entity: unknown, viaje: Viaje) =>
-        Promise.resolve({
+      save: jest.fn((_entity: unknown, viaje: Viaje) => {
+        viajeGuardado = {
           ...viaje,
           id: '13a8a44c-9f8e-4f5e-b822-c1972ba1cb85',
-        }),
-      ),
+        };
+        return Promise.resolve(viajeGuardado);
+      }),
+      findOneOrFail: jest.fn(() => Promise.resolve(viajeGuardado)),
+      createQueryBuilder: jest.fn(() => queryBuilder),
     };
     dataSource = {
       transaction: jest.fn((callback: (value: EntityManager) => unknown) =>
         callback(manager as unknown as EntityManager),
       ),
     };
-    service = new ViajesService(dataSource as unknown as DataSource);
+    validarDisponible = jest.fn().mockResolvedValue(undefined);
+    crearTicket = jest.fn(() => {
+      if (!viajeGuardado) throw new Error('Viaje no guardado');
+      viajeGuardado.ticket = {
+        id: 'ticket-id',
+        codigo_ticket: '260828237140915421537',
+        fecha_generacion: viajeGuardado.fecha_hora_salida,
+      } as Ticket;
+      return Promise.resolve(viajeGuardado.ticket);
+    });
+    registrarIncidencias = jest.fn().mockResolvedValue(undefined);
+    service = new ViajesService(
+      dataSource as unknown as DataSource,
+      { validarDisponible } as unknown as SuspensionesService,
+      { crearParaViaje: crearTicket } as unknown as TicketsService,
+      {
+        registrarAutomaticas: registrarIncidencias,
+      },
+    );
   });
 
   it('1. registra correctamente la salida dentro de una transacción', async () => {
@@ -145,6 +195,13 @@ describe('ViajesService - registrar salida', () => {
     expect(manager.save).toHaveBeenCalledTimes(1);
     expect(resultado.id).toBe('13a8a44c-9f8e-4f5e-b822-c1972ba1cb85');
     expect(resultado.folio).toMatch(/^VIA-\d{8}-000042$/);
+    expect(resultado.ticket?.codigo_ticket).toBe('260828237140915421537');
+    expect(crearTicket).toHaveBeenCalledWith(
+      manager,
+      '13a8a44c-9f8e-4f5e-b822-c1972ba1cb85',
+      '23714',
+      expect.any(Date),
+    );
     expect(resultado).toEqual(
       expect.objectContaining({
         estado: EstadoViaje.EN_TRANSITO,
@@ -169,6 +226,36 @@ describe('ViajesService - registrar salida', () => {
     expect(resultado).not.toHaveProperty('folio_banco');
     expect(resultado).not.toHaveProperty('checador_origen');
     expect(resultado).not.toHaveProperty('sincronizado');
+    expect(registrarIncidencias).toHaveBeenCalledWith(
+      manager,
+      expect.objectContaining({ id: resultado.id }),
+      expect.arrayContaining([
+        expect.objectContaining({
+          tipo: TipoIncidenciaViaje.RUTA_NO_CONFIGURADA,
+        }),
+        expect.objectContaining({
+          tipo: TipoIncidenciaViaje.TARIFA_NO_CONFIGURADA,
+        }),
+      ]),
+    );
+  });
+
+  it.each([
+    [TipoEntidadSuspension.CAMION, 'El camión está suspendido temporalmente'],
+    [TipoEntidadSuspension.CHOFER, 'El chofer está suspendido temporalmente'],
+    [
+      TipoEntidadSuspension.UBICACION,
+      'La ubicación de origen está suspendida temporalmente',
+    ],
+  ])('rechaza una salida con %s suspendido', async (tipo, mensaje) => {
+    validarDisponible.mockImplementation((actual: TipoEntidadSuspension) =>
+      actual === tipo
+        ? Promise.reject(new ConflictException(mensaje))
+        : Promise.resolve(),
+    );
+    await expect(service.registrarSalida(dto, usuario)).rejects.toThrow(
+      mensaje,
+    );
   });
 
   it('2. rechaza origen y destino iguales antes de abrir la transacción', async () => {
@@ -272,6 +359,20 @@ describe('ViajesService - registrar salida', () => {
     );
   });
 
+  it('rechaza un chofer con licencia vencida con un mensaje claro', async () => {
+    chofer.vigencia_licencia = '2000-01-01';
+    await expect(service.registrarSalida(dto, usuario)).rejects.toThrow(
+      'La licencia del chofer está vencida. Debe renovarse antes de asignarlo a un nuevo viaje.',
+    );
+  });
+
+  it('permite un chofer con licencia por vencer', async () => {
+    const manana = new Date();
+    manana.setDate(manana.getDate() + 1);
+    chofer.vigencia_licencia = manana.toISOString().slice(0, 10);
+    await expect(service.registrarSalida(dto, usuario)).resolves.toBeDefined();
+  });
+
   it('11. rechaza ubicaciones que no pertenecen al proyecto', async () => {
     destino.proyecto = { id: 99 } as Proyecto;
     await expect(service.registrarSalida(dto, usuario)).rejects.toBeInstanceOf(
@@ -279,21 +380,46 @@ describe('ViajesService - registrar salida', () => {
     );
   });
 
-  it('12. rechaza un origen que no es banco', async () => {
+  it('12. permite Frente → Banco', async () => {
     origen.tipo = TipoUbicacion.FRENTE;
-    await expect(service.registrarSalida(dto, usuario)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
-  });
-
-  it('13. rechaza un destino que no es frente', async () => {
     destino.tipo = TipoUbicacion.BANCO;
-    await expect(service.registrarSalida(dto, usuario)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+
+    await expect(service.registrarSalida(dto, usuario)).resolves.toMatchObject({
+      ubicacion_origen: { tipo: TipoUbicacion.FRENTE },
+      ubicacion_destino: { tipo: TipoUbicacion.BANCO },
+    });
   });
 
-  it('14. rechaza un material sin unidad válida', async () => {
+  it('13. permite ubicaciones del mismo tipo si son puntos diferentes', async () => {
+    destino.tipo = TipoUbicacion.BANCO;
+    await expect(service.registrarSalida(dto, usuario)).resolves.toBeDefined();
+  });
+
+  it('14. permite Traza → Traza', async () => {
+    origen.tipo = TipoUbicacion.TRAZA;
+    destino.tipo = TipoUbicacion.TRAZA;
+    await expect(service.registrarSalida(dto, usuario)).resolves.toMatchObject({
+      ubicacion_origen: { tipo: TipoUbicacion.TRAZA },
+      ubicacion_destino: { tipo: TipoUbicacion.TRAZA },
+    });
+  });
+
+  it('15. permite Producto de corte con m3 en Frente → Banco', async () => {
+    material.nombre = 'Producto de corte';
+    origen.tipo = TipoUbicacion.FRENTE;
+    destino.tipo = TipoUbicacion.BANCO;
+
+    await expect(service.registrarSalida(dto, usuario)).resolves.toMatchObject({
+      material: {
+        nombre: 'Producto de corte',
+        unidad_medida: 'm3',
+      },
+      ubicacion_origen: { tipo: TipoUbicacion.FRENTE },
+      ubicacion_destino: { tipo: TipoUbicacion.BANCO },
+    });
+  });
+
+  it('16. rechaza un material sin unidad válida', async () => {
     material.unidad_medida = '   ';
     await expect(service.registrarSalida(dto, usuario)).rejects.toBeInstanceOf(
       BadRequestException,
@@ -380,5 +506,109 @@ describe('ViajesService - registrar salida', () => {
       service.registrarSalida(dto, { ...usuario, rol: Role.ADMINISTRADOR }),
     ).rejects.toBeInstanceOf(ForbiddenException);
     expect(dataSource.transaction).not.toHaveBeenCalled();
+  });
+
+  it('revierte la operación si no puede crear el ticket', async () => {
+    crearTicket.mockRejectedValue(new Error('fallo de ticket'));
+
+    await expect(service.registrarSalida(dto, usuario)).rejects.toThrow(
+      'fallo de ticket',
+    );
+    expect(registrarIncidencias).not.toHaveBeenCalled();
+  });
+
+  it('rechaza claramente un camión sin código de ticket', async () => {
+    camion.codigo_ticket_unidad = null;
+
+    await expect(service.registrarSalida(dto, usuario)).rejects.toThrow(
+      'El camión no tiene configurado su código de ticket.',
+    );
+    expect(manager.save).not.toHaveBeenCalled();
+    expect(crearTicket).not.toHaveBeenCalled();
+  });
+
+  it('hereda orden, ruta y tarifa, y congela el cálculo económico', async () => {
+    camion.capacidad_m3 = '15.600';
+    const ruta = {
+      id: 20,
+      activo: true,
+      vigente_desde: '2026-01-01',
+      vigente_hasta: null,
+      descripcion: 'Ruta acordada 3.5 km',
+      distancia_pavimento: '3.500',
+      distancia_total: '3.500',
+    } as RutaAcarreo;
+    const tarifa = {
+      id: 21,
+      activo: true,
+      vigente_desde: '2026-01-01',
+      vigente_hasta: null,
+      tipo_cobro: TipoCobroTarifa.POR_DISTANCIA_ESCALONADA,
+      precio_unitario: null,
+      precio_primer_km: '12.0000',
+      precio_km_subsecuente: '5.4000',
+    } as Tarifa;
+    const unidad = {
+      id: 22,
+      nombre: 'Unidad de prueba',
+      activo: true,
+      proyecto,
+    } as UnidadControl;
+    const orden = {
+      id: 23,
+      folio: 'ORD-20260828-000001',
+      estado: EstadoOrdenAcarreo.EN_PROCESO,
+      proyecto,
+      material,
+      ubicacion_origen: origen,
+      ubicacion_destino: destino,
+      ruta_acarreo: ruta,
+      unidad_control: unidad,
+      tarifa,
+    } as OrdenAcarreo;
+    manager.findOne.mockImplementation(
+      (entity: unknown, options: { where: { id?: number } }) => {
+        if (entity === OrdenAcarreo) return Promise.resolve(orden);
+        if (entity === Ubicacion)
+          return Promise.resolve(
+            options.where.id === origen.id ? origen : destino,
+          );
+        if (entity === Viaje) return Promise.resolve(null);
+        return Promise.resolve(null);
+      },
+    );
+
+    await service.registrarSalida(
+      {
+        orden_acarreo_id: orden.id,
+        camion_id: camion.id,
+        chofer_id: chofer.id,
+        cantidad_salida: 15.6,
+      },
+      usuario,
+    );
+
+    expect(manager.create).toHaveBeenCalledWith(
+      Viaje,
+      expect.objectContaining({
+        orden_acarreo: orden,
+        ruta_acarreo: ruta,
+        tarifa_aplicada: tarifa,
+        unidad_control: unidad,
+        capacidad_aplicada_m3: '15.600',
+        distancia_total_aplicada: '3.500',
+        precio_primer_km_aplicado: '12.0000',
+        precio_km_subsecuente_aplicado: '5.4000',
+        m3_km: '54.60',
+        coste_primer_km: '187.20',
+        coste_km_subsecuente: '210.60',
+        importe_acarreo: '397.80',
+      }),
+    );
+    expect(registrarIncidencias).toHaveBeenCalledWith(
+      manager,
+      expect.any(Object),
+      [],
+    );
   });
 });
