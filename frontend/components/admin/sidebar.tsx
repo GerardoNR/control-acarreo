@@ -5,19 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Icon, type IconName } from "./icons";
-
-const catalogItems = [
-  ["Proyectos", "/dashboard/catalogos/proyectos", "folder"],
-  ["Ubicaciones", "/dashboard/catalogos/ubicaciones", "location"],
-  ["Materiales", "/dashboard/catalogos/materiales", "material"],
-  ["Camiones", "/dashboard/catalogos/camiones", "truck"],
-  ["Choferes", "/dashboard/catalogos/choferes", "driver"],
-  ["Checadores", "/dashboard/catalogos/checadores", "checker"],
-] as const;
+import { catalogNavigation, mainNavigation, utilityNavigation } from "@/lib/admin-navigation";
 
 function NavLink({ label, href, icon, collapsed }: { label: string; href: string; icon: IconName; collapsed: boolean }) {
   const pathname = usePathname();
-  const active = pathname === href;
+  const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(`${href}/`));
   return (
     <Link
       href={href}
@@ -37,9 +29,9 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
   const [catalogOpen, setCatalogOpen] = useState(true);
 
   return (
-    <aside className={`hidden shrink-0 border-r border-[#CBD5E1] bg-white transition-[width] duration-200 md:flex md:flex-col ${collapsed ? "w-20" : "w-64"}`}>
-      <div className={`flex h-17 items-center border-b border-[#E2E8F0] ${collapsed ? "justify-center px-2" : "gap-3 px-5"}`}>
-        <Image src="/indi_logo.png" alt="INDI" width={42} height={42} className="shrink-0" />
+    <aside className={`sticky top-0 z-20 hidden h-screen shrink-0 border-r border-[#CBD5E1] bg-white transition-[width] duration-200 md:flex md:flex-col ${collapsed ? "w-20" : "w-60"}`}>
+      <div className={`flex h-17 items-center border-b border-[#E2E8F0] ${collapsed ? "justify-center px-2" : "gap-3 px-4"}`}>
+        <Image src="/indi_logo.png" alt="INDI" width={42} height={42} className="shrink-0 rounded-xl" />
         {!collapsed ? (
           <div className="min-w-0">
             <p className="font-bold tracking-tight text-[#0F172A]">INDI</p>
@@ -48,9 +40,8 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
         ) : null}
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3" aria-label="Navegación administrativa">
-        <NavLink label="Dashboard" href="/dashboard" icon="dashboard" collapsed={collapsed} />
-        <NavLink label="Viajes" href="/dashboard/viajes" icon="trips" collapsed={collapsed} />
+      <nav className="flex-1 space-y-1 overflow-y-auto p-2.5" aria-label="Navegación administrativa">
+        {mainNavigation.map((item) => <NavLink key={item.href} {...item} collapsed={collapsed} />)}
 
         <div className="pt-3">
           {!collapsed ? (
@@ -70,15 +61,15 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
 
           {(catalogOpen || collapsed) ? (
             <div className={`mt-1 space-y-1 ${collapsed ? "" : "ml-3 border-l border-[#E2E8F0] pl-2"}`}>
-              {catalogItems.map(([label, href, icon]) => (
-                <NavLink key={href} label={label} href={href} icon={icon} collapsed={collapsed} />
+              {catalogNavigation.map((item) => (
+                <NavLink key={item.href} {...item} collapsed={collapsed} />
               ))}
             </div>
           ) : null}
         </div>
 
         <div className="pt-3">
-          <NavLink label="Ajustes" href="/dashboard/ajustes" icon="settings" collapsed={collapsed} />
+          {utilityNavigation.map((item) => <NavLink key={item.href} {...item} collapsed={collapsed} />)}
         </div>
       </nav>
     </aside>

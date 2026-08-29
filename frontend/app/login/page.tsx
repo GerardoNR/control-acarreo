@@ -48,10 +48,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="grid min-h-screen bg-[#F8FAFC] lg:grid-cols-[minmax(320px,0.8fr)_minmax(520px,1.2fr)]">
-      <section className="hidden border-r border-[#CBD5E1] bg-[#F1F5F9] p-12 lg:flex lg:flex-col lg:justify-between">
+    <main className="grid min-h-screen bg-[#F8FAFC] min-[850px]:grid-cols-[minmax(260px,0.72fr)_minmax(420px,1.28fr)]">
+      <section className="hidden border-r border-[#CBD5E1] bg-[#F1F5F9] p-6 min-[850px]:flex min-[850px]:flex-col min-[850px]:justify-between sm:p-8 xl:p-12">
         <div className="flex items-center gap-4">
-          <Image src="/indi_logo.png" alt="INDI" width={68} height={68} priority />
+          <Image src="/indi_logo.png" alt="INDI" width={68} height={68} priority className="rounded-xl" />
           <div>
             <p className="text-2xl font-bold tracking-tight text-[#0F172A]">INDI</p>
             <p className="text-sm text-[#475569]">Control de acarreo</p>
@@ -71,10 +71,10 @@ export default function LoginPage() {
         <p className="text-xs text-[#64748B]">Sistema de trazabilidad de materiales</p>
       </section>
 
-      <section className="flex items-center justify-center px-5 py-10 sm:px-10">
+      <section className="flex items-center justify-center px-4 py-8 sm:px-8 sm:py-10">
         <div className="w-full max-w-md">
-          <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <Image src="/indi_logo.png" alt="INDI" width={54} height={54} priority />
+          <div className="mb-8 flex items-center gap-3 min-[850px]:hidden">
+            <Image src="/indi_logo.png" alt="INDI" width={54} height={54} priority className="rounded-xl" />
             <div>
               <p className="text-xl font-bold text-[#0F172A]">INDI</p>
               <p className="text-xs text-[#475569]">Panel administrativo</p>

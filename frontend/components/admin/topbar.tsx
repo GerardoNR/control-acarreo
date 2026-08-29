@@ -3,18 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { Icon } from "./icons";
-
-const sectionNames: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/dashboard/viajes": "Viajes",
-  "/dashboard/catalogos/proyectos": "Proyectos",
-  "/dashboard/catalogos/ubicaciones": "Ubicaciones",
-  "/dashboard/catalogos/materiales": "Materiales",
-  "/dashboard/catalogos/camiones": "Camiones",
-  "/dashboard/catalogos/choferes": "Choferes",
-  "/dashboard/catalogos/checadores": "Checadores",
-  "/dashboard/ajustes": "Ajustes",
-};
+import { getAdminSectionTitle } from "@/lib/admin-navigation";
 
 export function Topbar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   const pathname = usePathname();
@@ -27,13 +16,13 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   }
 
   return (
-    <header className="flex h-17 shrink-0 items-center justify-between bg-[#0F172A] px-4 text-white sm:px-6">
+    <header className="sticky top-0 z-10 flex h-17 shrink-0 items-center justify-between bg-[#0F172A] px-4 text-white sm:px-6">
       <div className="flex min-w-0 items-center gap-3">
         <button type="button" onClick={onToggleSidebar} className="rounded-lg p-2 text-slate-300 transition-colors hover:bg-white/10 hover:text-white" aria-label="Expandir o colapsar menú">
           <Icon name="menu" className="h-5 w-5" />
         </button>
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold sm:text-base">{sectionNames[pathname] ?? "Panel administrativo"}</p>
+          <h1 className="truncate text-sm font-semibold sm:text-base">{getAdminSectionTitle(pathname)}</h1>
         </div>
       </div>
 

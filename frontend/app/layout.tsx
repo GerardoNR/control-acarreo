@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "INDI | Panel administrativo",
-  description: "Control y seguimiento del transporte de materiales",
+  description: "Control del transporte de materiales",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

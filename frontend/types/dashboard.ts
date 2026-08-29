@@ -9,36 +9,20 @@ export interface DashboardResumen {
     unidad_medida: string;
     cantidad: number;
   }>;
-}
-
-export type EstadoViaje = "en_transito" | "completado" | "cancelado";
-
-interface CatalogoViaje {
-  id: number;
-  nombre: string;
-}
-
-export interface ViajeResumen {
-  id: string;
-  folio: string;
-  estado: EstadoViaje;
-  camion: {
-    id: number;
-    placas: string;
-    numero_economico: string | null;
-  };
-  material: CatalogoViaje & { unidad_medida: string };
-  ubicacion_origen: CatalogoViaje;
-  ubicacion_destino: CatalogoViaje;
-  fecha_hora_salida: string;
-}
-
-export interface ViajesPaginados {
-  data: ViajeResumen[];
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-    total_pages: number;
+  actividad_ultimos_7_dias: Array<{
+    fecha: string;
+    salidas: number;
+    completados: number;
+    cancelados: number;
+  }>;
+  volumen_ultimos_7_dias: Array<{
+    fecha: string;
+    unidad_medida: string;
+    cantidad: number;
+  }>;
+  operacion_actual: {
+    viajes_en_transito: number;
+    camiones_operando: number;
+    proyectos_activos: number;
   };
 }

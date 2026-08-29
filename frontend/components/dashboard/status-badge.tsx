@@ -1,4 +1,4 @@
-import type { EstadoViaje } from "@/types/dashboard";
+import type { EstadoViaje } from "@/types/viajes";
 
 const statusStyles: Record<EstadoViaje, { label: string; className: string }> = {
   en_transito: { label: "En tránsito", className: "bg-sky-50 text-sky-700 ring-sky-200" },

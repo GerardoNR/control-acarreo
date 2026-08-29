@@ -18,6 +18,7 @@
 
 html {
   background: var(--indi-background);
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -40,4 +41,73 @@ a {
 :focus-visible {
   outline: 3px solid rgb(37 99 235 / 28%);
   outline-offset: 2px;
+}
+
+/* Patrón visual compartido de las tablas del panel administrativo. */
+:is(.admin-table, .indi-numbered) {
+  width: 100%;
+  color: var(--indi-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  text-align: left;
+}
+
+:is(.admin-table, .indi-numbered) thead {
+  border-bottom: 1px solid var(--indi-border);
+  background: var(--indi-surface-variant);
+  color: var(--indi-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  line-height: 1rem;
+  text-transform: uppercase;
+}
+
+:is(.admin-table, .indi-numbered) th,
+:is(.admin-table, .indi-numbered) td {
+  padding: 0.75rem 1rem;
+  vertical-align: middle;
+}
+
+:is(.admin-table, .indi-numbered) tbody tr {
+  border-bottom: 1px solid #e2e8f0;
+  transition: background-color 150ms ease;
+}
+
+:is(.admin-table, .indi-numbered) tbody tr:last-child { border-bottom: 0; }
+:is(.admin-table, .indi-numbered) tbody tr:not(:has(td[colspan])):hover { background: var(--indi-background); }
+:is(.admin-table, .indi-numbered) td[colspan] {
+  padding-block: 2.5rem;
+  color: var(--indi-text-secondary);
+  text-align: center;
+}
+
+/* Consecutivo automático solo para tablas que no declaran una columna # en JSX. */
+main table:not(.indi-numbered) thead tr::before,
+main table:not(.indi-numbered) tbody tr:not(:has(td[colspan]))::before {
+  display: table-cell;
+  width: 3rem;
+  padding: 0.75rem 1rem;
+  color: var(--indi-text-secondary);
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+main table:not(.indi-numbered) thead tr::before {
+  content: "#";
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+main table:not(.indi-numbered) tbody {
+  counter-reset: indi-row;
+}
+
+main table:not(.indi-numbered) tbody tr:not(:has(td[colspan]))::before {
+  counter-increment: indi-row;
+  content: counter(indi-row);
+  font-weight: 500;
 }
