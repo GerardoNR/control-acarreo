@@ -11,7 +11,5 @@ export const choferesService = {
   async update(id: number, payload: Partial<ChoferPayload>): Promise<Chofer> {
     return (await api.patch<Chofer>(`/choferes/${id}`, payload)).data;
   },
-  async setActive(id: number, activo: boolean): Promise<Chofer> {
-    return (await api.patch<Chofer>(`/choferes/${id}/estado`, { activo })).data;
-  },
+  async remove(id: number): Promise<void> { await api.delete(`/choferes/${id}`); },
 };

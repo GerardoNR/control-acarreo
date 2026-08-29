@@ -11,7 +11,5 @@ export const checadoresService = {
   async update(id: number, payload: UpdateChecadorPayload): Promise<Checador> {
     return (await api.patch<Checador>(`/checadores/${id}`, payload)).data;
   },
-  async setActive(id: number, activo: boolean): Promise<Checador> {
-    return (await api.patch<Checador>(`/checadores/${id}/estado`, { activo })).data;
-  },
+  async remove(id: number): Promise<void> { await api.delete(`/checadores/${id}`); },
 };

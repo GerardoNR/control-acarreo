@@ -8,10 +8,20 @@ export const proyectosService = {
   async create(payload: ProyectoPayload): Promise<Proyecto> {
     return (await api.post<Proyecto>("/proyectos", payload)).data;
   },
-  async update(id: number, payload: Partial<ProyectoPayload>): Promise<Proyecto> {
+  async update(
+    id: number,
+    payload: Partial<ProyectoPayload>,
+  ): Promise<Proyecto> {
     return (await api.patch<Proyecto>(`/proyectos/${id}`, payload)).data;
   },
   async setActive(id: number, activo: boolean): Promise<Proyecto> {
-    return (await api.patch<Proyecto>(`/proyectos/${id}/estado`, { activo })).data;
+    return (await api.patch<Proyecto>(`/proyectos/${id}/estado`, { activo }))
+      .data;
+  },
+  async finalize(id: number): Promise<Proyecto> {
+    return (await api.patch<Proyecto>(`/proyectos/${id}/finalizar`)).data;
+  },
+  async remove(id: number): Promise<void> {
+    await api.delete(`/proyectos/${id}`);
   },
 };

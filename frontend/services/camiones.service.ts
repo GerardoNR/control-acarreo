@@ -11,7 +11,5 @@ export const camionesService = {
   async update(id: number, payload: Partial<CamionPayload>): Promise<Camion> {
     return (await api.patch<Camion>(`/camiones/${id}`, payload)).data;
   },
-  async setActive(id: number, activo: boolean): Promise<Camion> {
-    return (await api.patch<Camion>(`/camiones/${id}/estado`, { activo })).data;
-  },
+  async remove(id: number): Promise<void> { await api.delete(`/camiones/${id}`); },
 };

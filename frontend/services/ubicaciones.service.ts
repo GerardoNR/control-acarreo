@@ -11,7 +11,5 @@ export const ubicacionesService = {
   async update(id: number, payload: Partial<UbicacionPayload>): Promise<Ubicacion> {
     return (await api.patch<Ubicacion>(`/ubicaciones/${id}`, payload)).data;
   },
-  async setActive(id: number, activo: boolean): Promise<Ubicacion> {
-    return (await api.patch<Ubicacion>(`/ubicaciones/${id}/estado`, { activo })).data;
-  },
+  async remove(id: number): Promise<void> { await api.delete(`/ubicaciones/${id}`); },
 };

@@ -5,12 +5,30 @@ export interface CatalogBase {
   actualizado_en: string;
 }
 
+export type SuspensionEntityType = "checador" | "chofer" | "camion" | "ubicacion";
+export interface SuspensionSummary {
+  id: number;
+  motivo: string;
+  observaciones: string | null;
+  fecha_inicio: string;
+  fecha_fin: string | null;
+  indefinida: boolean;
+}
+export interface SuspensionPayload {
+  motivo: string;
+  observaciones?: string;
+  fecha_inicio: string;
+  fecha_fin?: string;
+  indefinida: boolean;
+}
+
 export interface Proyecto extends CatalogBase {
   nombre: string;
   clave: string | null;
   desarrolladora: string | null;
   descripcion: string | null;
   nota_ruta: string | null;
+  finalizado_at: string | null;
 }
 
 export interface ProyectoPayload {
@@ -33,7 +51,7 @@ export interface MaterialPayload {
   descripcion?: string;
 }
 
-export type TipoUbicacion = "banco" | "frente";
+export type TipoUbicacion = "banco" | "frente" | "traza";
 
 export interface Ubicacion extends CatalogBase {
   proyecto: Proyecto;
@@ -55,6 +73,7 @@ export interface Camion extends CatalogBase {
   placas: string;
   numero_economico: string | null;
   nfc_tag_uid: string;
+  codigo_ticket_unidad: string | null;
   capacidad_m3: string;
   tipo_camion: string | null;
   marca: string | null;
@@ -66,6 +85,7 @@ export interface CamionPayload {
   placas: string;
   numero_economico?: string;
   nfc_tag_uid: string;
+  codigo_ticket_unidad?: string;
   capacidad_m3: number;
   tipo_camion?: string;
   marca?: string;

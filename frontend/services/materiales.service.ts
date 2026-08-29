@@ -11,7 +11,5 @@ export const materialesService = {
   async update(id: number, payload: Partial<MaterialPayload>): Promise<Material> {
     return (await api.patch<Material>(`/materiales/${id}`, payload)).data;
   },
-  async setActive(id: number, activo: boolean): Promise<Material> {
-    return (await api.patch<Material>(`/materiales/${id}/estado`, { activo })).data;
-  },
+  async remove(id: number): Promise<void> { await api.delete(`/materiales/${id}`); },
 };
