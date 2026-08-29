@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -9,10 +10,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Role } from '../auth/enums/role.enum';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { CambiarEstadoDto } from '../common/dto/cambiar-estado.dto';
+import type { AuthUser } from '../auth/interfaces/auth-user.interface';
+import { PapeleraService } from '../papelera/papelera.service';
 import { ChecadoresService } from './checadores.service';
 import { CreateChecadorDto } from './dto/create-checador.dto';
 import { UpdateChecadorDto } from './dto/update-checador.dto';
@@ -21,7 +25,10 @@ import { UpdateChecadorDto } from './dto/update-checador.dto';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMINISTRADOR)
 export class ChecadoresController {
-  constructor(private readonly checadoresService: ChecadoresService) {}
+  constructor(
+    private readonly checadoresService: ChecadoresService,
+    private readonly papeleraService: PapeleraService,
+  ) {}
 
   @Get()
   findAll() {
@@ -42,8 +49,9 @@ export class ChecadoresController {
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateChecadorDto,
+    @CurrentUser() usuario: AuthUser,
   ) {
-    return this.checadoresService.update(id, dto);
+    return this.checadoresService.update(id, dto, usuario);
   }
 
   @Patch(':id/estado')
@@ -52,5 +60,13 @@ export class ChecadoresController {
     @Body() dto: CambiarEstadoDto,
   ) {
     return this.checadoresService.cambiarEstado(id, dto.activo);
+  }
+
+  @Delete(':id')
+  enviarPapelera(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() usuario: AuthUser,
+  ) {
+    return this.papeleraService.enviar('checador', id, usuario);
   }
 }

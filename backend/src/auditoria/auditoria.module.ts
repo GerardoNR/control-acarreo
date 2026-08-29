@@ -8,5 +8,6 @@ import { AuditoriaService } from './auditoria.service';
   imports: [TypeOrmModule.forFeature([Auditoria])],
   controllers: [AuditoriaController],
   providers: [AuditoriaService],
+  exports: [AuditoriaService],
 })
 export class AuditoriaModule {}
