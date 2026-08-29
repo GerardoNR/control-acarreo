@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { Proyecto } from '../proyectos/proyecto.entity';
 import { CreateUbicacionDto } from './dto/create-ubicacion.dto';
 import { UpdateUbicacionDto } from './dto/update-ubicacion.dto';
@@ -17,6 +17,7 @@ export class UbicacionesService {
 
   findAll(): Promise<Ubicacion[]> {
     return this.ubicacionesRepository.find({
+      where: { deleted_at: IsNull() },
       relations: { proyecto: true },
       order: { nombre: 'ASC', id: 'ASC' },
     });
@@ -24,7 +25,7 @@ export class UbicacionesService {
 
   async findOne(id: number): Promise<Ubicacion> {
     const ubicacion = await this.ubicacionesRepository.findOne({
-      where: { id },
+      where: { id, deleted_at: IsNull() },
       relations: { proyecto: true },
     });
     if (!ubicacion)

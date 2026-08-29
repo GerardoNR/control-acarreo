@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { CreateMaterialDto } from './dto/create-material.dto';
 import { UpdateMaterialDto } from './dto/update-material.dto';
 import { Material } from './material.entity';
@@ -14,12 +14,16 @@ export class MaterialesService {
 
   findAll(): Promise<Material[]> {
     return this.materialesRepository.find({
+      where: { deleted_at: IsNull() },
       order: { nombre: 'ASC', id: 'ASC' },
     });
   }
 
   async findOne(id: number): Promise<Material> {
-    const material = await this.materialesRepository.findOneBy({ id });
+    const material = await this.materialesRepository.findOneBy({
+      id,
+      deleted_at: IsNull(),
+    });
     if (!material)
       throw new NotFoundException(`Material con id ${id} no encontrado`);
     return material;

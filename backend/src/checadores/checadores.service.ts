@@ -5,11 +5,13 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { QueryFailedError, Repository } from 'typeorm';
+import { IsNull, QueryFailedError, Repository } from 'typeorm';
 import { Administrador } from '../administradores/administrador.entity';
 import { Checador } from './checador.entity';
 import { CreateChecadorDto } from './dto/create-checador.dto';
 import { UpdateChecadorDto } from './dto/update-checador.dto';
+import { AuditoriaService } from '../auditoria/auditoria.service';
+import { AuthUser } from '../auth/interfaces/auth-user.interface';
 
 type ChecadorResponse = Omit<Checador, 'password_hash'>;
 
@@ -22,10 +24,12 @@ export class ChecadoresService {
     private readonly checadoresRepository: Repository<Checador>,
     @InjectRepository(Administrador)
     private readonly administradoresRepository: Repository<Administrador>,
+    private readonly auditoriaService: AuditoriaService,
   ) {}
 
   async findAll(): Promise<ChecadorResponse[]> {
     const checadores = await this.checadoresRepository.find({
+      where: { deleted_at: IsNull() },
       order: { nombre: 'ASC', id: 'ASC' },
     });
     return checadores.map((checador) => this.toResponse(checador));
@@ -51,7 +55,11 @@ export class ChecadoresService {
     }
   }
 
-  async update(id: number, dto: UpdateChecadorDto): Promise<ChecadorResponse> {
+  async update(
+    id: number,
+    dto: UpdateChecadorDto,
+    usuario: AuthUser,
+  ): Promise<ChecadorResponse> {
     const checador = await this.findEntity(id);
     if (dto.usuario !== undefined && dto.usuario !== checador.usuario) {
       await this.ensureUsuarioDisponible(dto.usuario, id);
@@ -67,7 +75,18 @@ export class ChecadoresService {
     }
 
     try {
-      return this.toResponse(await this.checadoresRepository.save(checador));
+      const response = this.toResponse(
+        await this.checadoresRepository.save(checador),
+      );
+      if (dto.password !== undefined) {
+        await this.auditoriaService.registrar({
+          usuario,
+          accion: 'RESTABLECER_PASSWORD_CHECADOR',
+          entidad: 'checador',
+          entidadId: id,
+        });
+      }
+      return response;
     } catch (error) {
       this.handleDuplicate(error);
     }
@@ -80,7 +99,10 @@ export class ChecadoresService {
   }
 
   private async findEntity(id: number): Promise<Checador> {
-    const checador = await this.checadoresRepository.findOneBy({ id });
+    const checador = await this.checadoresRepository.findOneBy({
+      id,
+      deleted_at: IsNull(),
+    });
     if (!checador) {
       throw new NotFoundException(`Checador con id ${id} no encontrado`);
     }

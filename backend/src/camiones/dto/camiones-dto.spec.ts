@@ -73,4 +73,31 @@ describe('DTO de camiones - capacidad_m3', () => {
 
     expect(errores).toHaveLength(0);
   });
+
+  it('acepta un código de ticket de unidad con cinco dígitos', async () => {
+    const errores = await validate(
+      plainToInstance(CreateCamionDto, {
+        ...camionValido,
+        codigo_ticket_unidad: '00142',
+      }),
+    );
+
+    expect(errores).toHaveLength(0);
+  });
+
+  it.each(['142', '001421', '12A42', '     '])(
+    'rechaza el código de ticket de unidad inválido %j',
+    async (codigo_ticket_unidad) => {
+      const errores = await validate(
+        plainToInstance(CreateCamionDto, {
+          ...camionValido,
+          codigo_ticket_unidad,
+        }),
+      );
+
+      expect(
+        errores.some((error) => error.property === 'codigo_ticket_unidad'),
+      ).toBe(true);
+    },
+  );
 });

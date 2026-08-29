@@ -8,6 +8,7 @@ import { Checador } from '../checadores/checador.entity';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { Role } from './enums/role.enum';
+import { SuspensionesService } from '../suspensiones/suspensiones.service';
 
 const repositoryWithResult = <T>(result: T | null) => {
   const queryBuilder = {
@@ -72,5 +73,28 @@ describe('AuthService - identidad normalizada', () => {
     await expect(
       service.login({ usuario: 'duplicado', password: 'password' }),
     ).rejects.toThrow('Credenciales inválidas');
+  });
+
+  it('rechaza el login de un checador suspendido', async () => {
+    const password_hash = await bcrypt.hash('password', 4);
+    const service = new AuthService(
+      repositoryWithResult<Administrador>(
+        null,
+      ) as unknown as Repository<Administrador>,
+      repositoryWithResult({
+        id: 7,
+        nombre: 'Checador',
+        usuario: 'checador',
+        password_hash,
+      } as Checador) as unknown as Repository<Checador>,
+      { signAsync: jest.fn() } as unknown as JwtService,
+      { get: jest.fn() } as unknown as ConfigService,
+      {
+        estaSuspendido: jest.fn().mockResolvedValue(true),
+      } as unknown as SuspensionesService,
+    );
+    await expect(
+      service.login({ usuario: 'checador', password: 'password' }),
+    ).rejects.toThrow('La cuenta está suspendida temporalmente');
   });
 });

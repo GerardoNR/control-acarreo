@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { Chofer } from './chofer.entity';
 import { CreateChoferDto } from './dto/create-chofer.dto';
 import { UpdateChoferDto } from './dto/update-chofer.dto';
@@ -14,12 +14,16 @@ export class ChoferesService {
 
   findAll(): Promise<Chofer[]> {
     return this.choferesRepository.find({
+      where: { deleted_at: IsNull() },
       order: { nombre: 'ASC', id: 'ASC' },
     });
   }
 
   async findOne(id: number): Promise<Chofer> {
-    const chofer = await this.choferesRepository.findOneBy({ id });
+    const chofer = await this.choferesRepository.findOneBy({
+      id,
+      deleted_at: IsNull(),
+    });
     if (!chofer) {
       throw new NotFoundException(`Chofer con id ${id} no encontrado`);
     }

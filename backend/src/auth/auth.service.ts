@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Optional,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,6 +15,8 @@ import { LoginDto } from './dto/login.dto';
 import { Role } from './enums/role.enum';
 import { AuthUser } from './interfaces/auth-user.interface';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { SuspensionesService } from '../suspensiones/suspensiones.service';
+import { TipoEntidadSuspension } from '../suspensiones/suspension.entity';
 
 type UsuarioConPassword = AuthUser & { password_hash: string };
 
@@ -22,6 +29,7 @@ export class AuthService {
     private readonly checadoresRepository: Repository<Checador>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    @Optional() private readonly suspensionesService?: SuspensionesService,
   ) {}
 
   async login(dto: LoginDto) {
@@ -32,6 +40,17 @@ export class AuthService {
 
     if (!usuario || !passwordValido) {
       throw new UnauthorizedException('Credenciales inválidas');
+    }
+    if (
+      usuario.rol === Role.CHECADOR &&
+      (await this.suspensionesService?.estaSuspendido(
+        TipoEntidadSuspension.CHECADOR,
+        usuario.id,
+      )) === true
+    ) {
+      throw new ForbiddenException(
+        'La cuenta está suspendida temporalmente. Contacta al administrador.',
+      );
     }
 
     const perfil: AuthUser = {

@@ -10,11 +10,13 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { SuspensionesModule } from '../suspensiones/suspensiones.module';
 
 @Module({
   imports: [
     ConfigModule,
     TypeOrmModule.forFeature([Administrador, Checador]),
+    SuspensionesModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

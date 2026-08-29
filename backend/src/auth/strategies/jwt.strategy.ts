@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Optional, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PassportStrategy } from '@nestjs/passport';
@@ -9,6 +9,8 @@ import { Checador } from '../../checadores/checador.entity';
 import { Role } from '../enums/role.enum';
 import { AuthUser } from '../interfaces/auth-user.interface';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { SuspensionesService } from '../../suspensiones/suspensiones.service';
+import { TipoEntidadSuspension } from '../../suspensiones/suspension.entity';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -18,6 +20,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly administradoresRepository: Repository<Administrador>,
     @InjectRepository(Checador)
     private readonly checadoresRepository: Repository<Checador>,
+    @Optional() private readonly suspensionesService?: SuspensionesService,
   ) {
     const secret = configService.get<string>('JWT_SECRET');
     if (!secret) {
@@ -55,6 +58,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       });
       if (!checador || checador.usuario !== payload.usuario) {
         throw new UnauthorizedException();
+      }
+      if (
+        (await this.suspensionesService?.estaSuspendido(
+          TipoEntidadSuspension.CHECADOR,
+          checador.id,
+        )) === true
+      ) {
+        throw new UnauthorizedException(
+          'La cuenta está suspendida temporalmente',
+        );
       }
       return {
         id: checador.id,

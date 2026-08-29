@@ -7,6 +7,7 @@ import {
   Max,
   Min,
   MinLength,
+  Matches,
 } from 'class-validator';
 import { Trim } from '../../common/validation/string.transforms';
 
@@ -24,6 +25,13 @@ export class UpdateCamionDto {
   @IsString()
   @MinLength(1)
   numero_economico?: string;
+
+  @IsOptional()
+  @Trim()
+  @Matches(/^\d{5}$/, {
+    message: 'codigo_ticket_unidad debe contener exactamente 5 dígitos',
+  })
+  codigo_ticket_unidad?: string;
 
   @IsOptional()
   @Trim()
